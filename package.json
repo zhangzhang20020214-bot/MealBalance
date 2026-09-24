@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "node scripts/check-api-imports.mjs && tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "check:imports": "node scripts/check-api-imports.mjs",
     "verify": "node scripts/verify-loop.mjs",
     "verify:agent": "node scripts/verify-agent.mjs",
     "verify:reply": "node scripts/verify-reply.mjs",
