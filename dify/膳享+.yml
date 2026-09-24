@@ -194,7 +194,7 @@ workflow:
           completion_params:
             temperature: 0.7
           mode: chat
-          name: qwen3.7-plus
+          name: qwen3.7-flash
           provider: langgenius/tongyi/tongyi
         prompt_template:
         - id: c20e40e6-1808-47ab-a706-456601c7b98f
@@ -479,7 +479,7 @@ workflow:
       width: 241
       zIndex: 0
     viewport:
-      x: -828.9163916487228
-      y: 161.30341234026673
+      x: -622.9163916487227
+      y: 64.30341234026673
       zoom: 0.7578582832552008
   rag_pipeline_variables: []

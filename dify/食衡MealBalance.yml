@@ -37,6 +37,25 @@ workflow:
       - remote_url
       - local_file
       enabled: true
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 50
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        knowledge_file_size_limit: 15
+        single_chunk_attachment_limit: 10
+        skill_file_size_limit: 50
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
       number_limits: 3
     opening_statement: ''
     retriever_resource:
@@ -322,21 +341,24 @@ workflow:
           completion_params:
             temperature: 0.2
           mode: chat
-          name: qwen3.7-plus
+          name: qwen3.7-flash
           provider: langgenius/tongyi/tongyi
         prompt_template:
         - id: c20e40e6-1808-47ab-a706-456601c7b98f
           role: system
-          text: "  一、角色\n\n  你是「食衡MealBalance」的饮食决策 Agent。你结合【用户健康档案】与【国家卫健委官方食养指南知识】，对用户输入的图片或文本，给出安全、可执行、合规的个性化饮食建议。\n\
+          text: " 一、角色\n\n  你是「食衡MealBalance」的饮食决策 Agent。你结合【用户健康档案】与【国家卫健委官方食养指南知识】，对用户输入的图片或文本，给出安全、可执行、合规的个性化饮食建议。\n\
             \n  你不是医生：不做医疗诊断、不开处方、不承诺疗效。所有建议以官方食养指南为据，超出指南范围的内容须明确说明，不得编造。\n\n  二、输入（三份\
             \ JSON 贴在最后）\n\n  · profile：healthGoals[] 用码 —— sugar_control 控糖 / oil_control\
             \ 控油 / salt_control 控盐 / balanced 均衡 / body_management 身材管理；specialStage[]\
             \ 用码 —— pregnancy / elderly / child / recovery；healthRestrictions[]（type/item/severity）。\n\
             \  · input：mode 为 fridge / plate / dish / menu / ingredient 之一；另有 text\
             \ 与 images。\n  · today_intake：已记录的餐次与克数、各项合计与目标、还缺哪几餐。用户问「今天吃多了吗」「还剩多少热量」时据此回答，不要反问。检索到的指南片段在\
-            \ {{#context#}}。\n\n  三、处理流程（严格按序）\n\n  第 1 步 · 硬规则拦截（最高优先级）：severity\
-            \ = high 的过敏/禁忌/用药项命中输入 → 直接返回 blocked: true，不生成建议；medium/low 不拦截，但在 advice\
-            \ 里给明确风险提示。特殊阶段额外规避：孕期规避酒精/生食/高汞鱼；儿童规避高糖高盐及易噎呛；老人注意软烂易吞咽。\n  第 2 步 · 知识定位（选对指南）：控糖→糖尿病、控盐→高血压、控油→高脂血症、身材管理→肥胖、痛风→高尿酸、肾病→慢性肾脏病、补钙/骨质疏松→骨质疏松、老人肌肉衰减→肌少症、儿童生长迟缓→生长迟缓、脑卒中/康复→脑卒中。回答优先引用\
+            \ {{#context#}}。\n\n  三、处理流程（严格按序）\n\n  第 1 步 · 硬规则拦截（最高优先级）\n\n  - **看照片时（用户拍了一餐）不要整单拦截。**\
+            \ 照常把每一道菜列进 dishes —— 一样都不许漏。含过敏/禁忌成分的那道菜，在它的 reason 里写明「含鸡蛋，与档案过敏项冲突，不要吃」，并保留\
+            \ risk 里的命中项；**其他菜照常给建议**。为什么：用户要看的是「这盘菜认出了几样、其余几道怎么吃」。整单拦掉，等于连「你拍的是什么」都不告诉他。\n\
+            \  - 纯文字提问时可以整单拦截：severity = high 的过敏/禁忌/用药项命中用户这句话 → 直接返回 blocked: true，不生成建议。\n\
+            \  - medium/low 一律不拦截，但在 advice 里给明确风险提示。\n  - 特殊阶段额外规避：孕期规避酒精/生食/高汞鱼；儿童规避高糖高盐及易噎呛；老人注意软烂易吞咽。\n\
+            \  第 2 步 · 知识定位（选对指南）：控糖→糖尿病、控盐→高血压、控油→高脂血症、身材管理→肥胖、痛风→高尿酸、肾病→慢性肾脏病、补钙/骨质疏松→骨质疏松、老人肌肉衰减→肌少症、儿童生长迟缓→生长迟缓、脑卒中/康复→脑卒中。回答优先引用\
             \ {{#context#}}，未覆盖就明说「超出指南范围」，不编数值。\n  第 3 步 · 按 mode 生成建议；第 4 步 · 合规校验（禁医疗诊断、免责声明强制随每次返回）。\n\
             \n  四、各模式输出要点\n\n  - fridge：识别食材→ingredients；推荐 2–4 道菜→dishes（reason/recipe/healthModification）；advice\
             \ 搭配与用量。\n  - plate：**先把画面数清楚：有几样就列几样，一样都不许漏**（漏一样，后面的热量、钠、建议全跟着偏）。name\
@@ -355,7 +377,7 @@ workflow:
             : [\"水\",\"白砂糖\"], \"labels\": {\"热量\":\"180kJ\",\"钠\":\"120mg\"}, \"\
             riskItems\": [\"白砂糖\"] },\n      \"advice\": [\"建议先吃蔬菜再吃主食\", \"本餐油盐偏高，建议减少主食量\"\
             ],\n      \"disclaimer\": \"本建议仅供参考，不构成医疗诊断或治疗意见。如有健康问题请咨询专业医生。\"\n  \
-            \  }\n  }\n\n  - blocked = true → 只返回 blocked + risk，不返回 result； - blocked\
+            \  }\n  }\n\n  - blocked = true → 只返回 blocked + risk，不返回 result；blocked\
             \ = false → result 只填当前 mode 相关字段。（示例里的 ingredients / nutrition 属于 fridge\
             \ / ingredient 模式；plate 模式不要填这两个键，要填 dishes。）\n  - disclaimer 文案固定，每次必须原样返回上面那句。\n\
             \n  六、合规底线\n\n  1. 数值保真：克数/毫克/千卡/μmol/L/mmHg 必须来自指南原文，禁止编造或四舍五入。\n  2.\
@@ -373,7 +395,7 @@ workflow:
             3. 这道菜在目录里没有对应项时,**不要输出 foodId 这个字段** —— 不要为了填满字段而编一个,编出来的 id 和真的在格式上一模一样,只会白费一次校验\n\
             4. 不需要输出 grams。库里的每条都是「每 100g、熟食、可食部」的口径,用户会在 App 里自己确认份量\n5. **不要自己写\
             \ per100g 和 source。** 你没法联网,编出来的数字会被下游当真并直接进总数。库外菜的营养由下游自己去查;查不到时 App\
-            \ 会明着写「按 0 计」——那比一个看着很真的错数字好。\n\n\n【用户健康档案】{{#1789303129642.profile_json#}}\n\
+            \ 会明着写「按 0 计」——那比一个看着很真的错数字好。\n\n【用户健康档案】{{#1789303129642.profile_json#}}\n\
             \n【用户这句话】{{#1789303129642.text#}}\n\n【今日摄入】{{#1789303129642.today_intake#}}"
         - id: 61010f8f-1b64-4530-8b16-00f4a8bd66c9
           role: user
@@ -534,7 +556,68 @@ workflow:
       width: 241
       zIndex: 0
     - data:
-        code: "import json\nimport re\n\nDISCLAIMER = \"本建议仅供参考，不构成医疗诊断或治疗意见。如有健康问题请咨询专业医生。\"\n\ndef main(llm_text: str, query: str) -> dict:\n    profile = {}\n    try:\n        req = json.loads(query)\n        if isinstance(req, dict):\n            profile = req.get(\"profile\") or {}\n    except Exception:\n        profile = {}\n\n    data = None\n    raw = (llm_text or \"\").strip()\n    if raw.startswith(\"```\"):\n        raw = re.sub(r\"^```[a-zA-Z]*\\s*\", \"\", raw)\n        raw = re.sub(r\"\\s*```$\", \"\", raw).strip()\n\n    try:\n        data = json.loads(raw)\n    except Exception:\n        m = re.search(r\"\\{.*\\}\", raw, re.S)\n        if m:\n            try:\n                data = json.loads(m.group(0))\n            except Exception:\n                data = None\n\n    if not isinstance(data, dict):\n        return {\n            \"valid\": False,\n            \"final_json\": json.dumps({\n                \"blocked\": False,\n                \"result\": {\n                    \"title\": \"服务暂时不可用\",\n                    \"advice\": [\"抱歉，本次生成结果解析失败，请重试。\"],\n                    \"disclaimer\": DISCLAIMER,\n                },\n            }, ensure_ascii=False),\n        }\n\n    blocked = bool(data.get(\"blocked\", False))\n    blocked_items = list((data.get(\"risk\") or {}).get(\"items\") or [])\n\n    if not blocked:\n        high_items = [\n            (r.get(\"item\") or \"\").strip()\n            for r in (profile.get(\"healthRestrictions\") or [])\n            if isinstance(r, dict)\n            and r.get(\"severity\") == \"high\"\n            and r.get(\"type\") in (\"allergy\", \"taboo\", \"drug\")\n        ]\n        result = data.get(\"result\") or {}\n        nutrition = result.get(\"nutrition\") or {}\n\n        # ===== 这一处就是那个 bug 的修复 =====\n        # 原来这里是:  haystack = json.dumps(result, ensure_ascii=False)\n        # 扫的是 result **全文** —— 连 advice / title / recipe /\n        # healthModification 一起扫。于是一个花生过敏的人问「晚餐吃什么」,\n        # LLM 写下「避免花生」这条完全正确的建议,反而被判定命中并拦截:\n        # 越是需要建议的人越拿不到建议。\n        # 而且它不确定 —— 同一句话跑两次,可能一次拦一次不拦。\n        #\n        # 现在只扫「用户真的会吃进去的东西」。\n        haystack = json.dumps({\n            \"dishes\": [\n                d.get(\"name\") for d in (result.get(\"dishes\") or []) if isinstance(d, dict)\n            ],\n            \"ingredients\": [\n                i.get(\"name\") if isinstance(i, dict) else i\n                for i in (result.get(\"ingredients\") or [])\n            ],\n            \"nutrition_ingredients\": nutrition.get(\"ingredients\") or [],\n            \"risk_items\": nutrition.get(\"riskItems\") or [],\n        }, ensure_ascii=False)\n\n        for item in high_items:\n            if item and item in haystack:\n                blocked = True\n                # 去重:LLM 自己可能已经把这个成分写进 risk.items 了,\n                # 不去重的话提示语会变成「花生、花生」\n                if item not in blocked_items:\n                    blocked_items.append(item)\n\n    # 2026-09-23:命中高危项时**不再整单拦截**。\n    # 原来的做法是把整份结果换成 blocked(dishes 一道都不返回),App 只能渲染\n    # 一张「已拦截」的卡,用户连这盘菜认出了几样都看不到。\n    # 现在:保留结果,把命中的成分写进**那道菜**的菜名括号里 ——\n    # App 里菜名的括号注释会被剥掉再匹配食物库,而显示和忌口判断看的是原名,\n    # 所以「番茄炒蛋（含鸡蛋）」既命中 tomato-egg,又会被标成「别吃」。\n    final = data\n    final[\"blocked\"] = False\n    result = final.get(\"result\") or {}\n    result[\"disclaimer\"] = DISCLAIMER\n\n    if blocked and blocked_items:\n        marked = 0\n        for d in (result.get(\"dishes\") or []):\n            if not isinstance(d, dict):\n                continue\n            name = (d.get(\"name\") or \"\").strip()\n            if not name or \"（\" in name:\n                continue\n            # 只看这道菜**自己**的名字和配料 —— 扫整段会把「避免鸡蛋」这种\n            # 建议也算成命中(工作流上一版就在这儿栽过,见上面 haystack 那段)\n            own = json.dumps({\n                \"name\": name,\n                \"ingredients\": (d.get(\"nutrition\") or {}).get(\"ingredients\") or [],\n            }, ensure_ascii=False)\n            hit = [it for it in blocked_items if it and it in own]\n            if hit:\n                d[\"name\"] = name + \"（含\" + \"、\".join(hit) + \"）\"\n                marked += 1\n\n        # 一道都没标上(命中项只在整餐级的配料表里)时,退一步:整餐提示,\n        # 但**不撒谎说拦了** —— 用户至少知道这一餐里有他不能吃的东西\n        msg = (\n            \"检测到「\" + \"、\".join(blocked_items) + \"」，与档案健康限制冲突：\"\n            + (\"带「含…」标记的那道菜不要吃，其余的照常。\" if marked else \"这一餐里有你不能吃的东西，请逐道核对。\")\n        )\n        final[\"risk\"] = {\"level\": \"high\", \"message\": msg, \"items\": blocked_items}\n\n    final[\"result\"] = result\n\n    return {\"valid\": True, \"final_json\": json.dumps(final, ensure_ascii=False)}\n"
+        code: "import json\nimport re\n\nDISCLAIMER = \"本建议仅供参考，不构成医疗诊断或治疗意见。如有健康问题请咨询专业医生。\"\
+          \n\ndef main(llm_text: str, query: str) -> dict:\n    profile = {}\n   \
+          \ try:\n        req = json.loads(query)\n        if isinstance(req, dict):\n\
+          \            profile = req.get(\"profile\") or {}\n    except Exception:\n\
+          \        profile = {}\n\n    data = None\n    raw = (llm_text or \"\").strip()\n\
+          \    if raw.startswith(\"```\"):\n        raw = re.sub(r\"^```[a-zA-Z]*\\\
+          s*\", \"\", raw)\n        raw = re.sub(r\"\\s*```$\", \"\", raw).strip()\n\
+          \n    try:\n        data = json.loads(raw)\n    except Exception:\n    \
+          \    m = re.search(r\"\\{.*\\}\", raw, re.S)\n        if m:\n          \
+          \  try:\n                data = json.loads(m.group(0))\n            except\
+          \ Exception:\n                data = None\n\n    if not isinstance(data,\
+          \ dict):\n        return {\n            \"valid\": False,\n            \"\
+          final_json\": json.dumps({\n                \"blocked\": False,\n      \
+          \          \"result\": {\n                    \"title\": \"服务暂时不可用\",\n\
+          \                    \"advice\": [\"抱歉，本次生成结果解析失败，请重试。\"],\n           \
+          \         \"disclaimer\": DISCLAIMER,\n                },\n            },\
+          \ ensure_ascii=False),\n        }\n\n    blocked = bool(data.get(\"blocked\"\
+          , False))\n    blocked_items = list((data.get(\"risk\") or {}).get(\"items\"\
+          ) or [])\n\n    if not blocked:\n        high_items = [\n            (r.get(\"\
+          item\") or \"\").strip()\n            for r in (profile.get(\"healthRestrictions\"\
+          ) or [])\n            if isinstance(r, dict)\n            and r.get(\"severity\"\
+          ) == \"high\"\n            and r.get(\"type\") in (\"allergy\", \"taboo\"\
+          , \"drug\")\n        ]\n        result = data.get(\"result\") or {}\n  \
+          \      nutrition = result.get(\"nutrition\") or {}\n\n        # ===== 这一处就是那个\
+          \ bug 的修复 =====\n        # 原来这里是:  haystack = json.dumps(result, ensure_ascii=False)\n\
+          \        # 扫的是 result **全文** —— 连 advice / title / recipe /\n        # healthModification\
+          \ 一起扫。于是一个花生过敏的人问「晚餐吃什么」,\n        # LLM 写下「避免花生」这条完全正确的建议,反而被判定命中并拦截:\n\
+          \        # 越是需要建议的人越拿不到建议。\n        # 而且它不确定 —— 同一句话跑两次,可能一次拦一次不拦。\n   \
+          \     #\n        # 现在只扫「用户真的会吃进去的东西」。\n        haystack = json.dumps({\n\
+          \            \"dishes\": [\n                d.get(\"name\") for d in (result.get(\"\
+          dishes\") or []) if isinstance(d, dict)\n            ],\n            \"\
+          ingredients\": [\n                i.get(\"name\") if isinstance(i, dict)\
+          \ else i\n                for i in (result.get(\"ingredients\") or [])\n\
+          \            ],\n            \"nutrition_ingredients\": nutrition.get(\"\
+          ingredients\") or [],\n            \"risk_items\": nutrition.get(\"riskItems\"\
+          ) or [],\n        }, ensure_ascii=False)\n\n        for item in high_items:\n\
+          \            if item and item in haystack:\n                blocked = True\n\
+          \                # 去重:LLM 自己可能已经把这个成分写进 risk.items 了,\n                #\
+          \ 不去重的话提示语会变成「花生、花生」\n                if item not in blocked_items:\n  \
+          \                  blocked_items.append(item)\n\n    # 2026-09-23:命中高危项时**不再整单拦截**。\n\
+          \    # 原来的做法是把整份结果换成 blocked(dishes 一道都不返回),App 只能渲染\n    # 一张「已拦截」的卡,用户连这盘菜认出了几样都看不到。\n\
+          \    # 现在:保留结果,把命中的成分写进**那道菜**的菜名括号里 ——\n    # App 里菜名的括号注释会被剥掉再匹配食物库,而显示和忌口判断看的是原名,\n\
+          \    # 所以「番茄炒蛋（含鸡蛋）」既命中 tomato-egg,又会被标成「别吃」。\n    final = data\n    final[\"\
+          blocked\"] = False\n    result = final.get(\"result\") or {}\n    result[\"\
+          disclaimer\"] = DISCLAIMER\n\n    if blocked and blocked_items:\n      \
+          \  marked = 0\n        for d in (result.get(\"dishes\") or []):\n      \
+          \      if not isinstance(d, dict):\n                continue\n         \
+          \   name = (d.get(\"name\") or \"\").strip()\n            if not name or\
+          \ \"（\" in name:\n                continue\n            # 只看这道菜**自己**的名字和配料\
+          \ —— 扫整段会把「避免鸡蛋」这种\n            # 建议也算成命中(工作流上一版就在这儿栽过,见上面 haystack 那段)\n\
+          \            own = json.dumps({\n                \"name\": name,\n     \
+          \           \"ingredients\": (d.get(\"nutrition\") or {}).get(\"ingredients\"\
+          ) or [],\n            }, ensure_ascii=False)\n            hit = [it for\
+          \ it in blocked_items if it and it in own]\n            if hit:\n      \
+          \          d[\"name\"] = name + \"（含\" + \"、\".join(hit) + \"）\"\n     \
+          \           marked += 1\n\n        # 一道都没标上(命中项只在整餐级的配料表里)时,退一步:整餐提示,\n\
+          \        # 但**不撒谎说拦了** —— 用户至少知道这一餐里有他不能吃的东西\n        msg = (\n        \
+          \    \"检测到「\" + \"、\".join(blocked_items) + \"」，与档案健康限制冲突：\"\n         \
+          \   + (\"带「含…」标记的那道菜不要吃，其余的照常。\" if marked else \"这一餐里有你不能吃的东西，请逐道核对。\"\
+          )\n        )\n        final[\"risk\"] = {\"level\": \"high\", \"message\"\
+          : msg, \"items\": blocked_items}\n\n    final[\"result\"] = result\n\n \
+          \   return {\"valid\": True, \"final_json\": json.dumps(final, ensure_ascii=False)}\n"
         code_language: python3
         outputs:
           final_json:
@@ -831,11 +914,11 @@ workflow:
       height: 147
       id: '1789904551200'
       position:
-        x: 1750
-        y: 507
+        x: 1628.5472832774442
+        y: 604.1621733780444
       positionAbsolute:
-        x: 1750
-        y: 507
+        x: 1628.5472832774442
+        y: 604.1621733780444
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -850,7 +933,7 @@ workflow:
           completion_params:
             temperature: 0.7
           mode: chat
-          name: qwen3.8-flash
+          name: qwen3.7-flash
           provider: langgenius/tongyi/tongyi
         prompt_template:
         - id: b61b3f1a-4981-4a58-8da7-d28bda7991c7
@@ -870,7 +953,7 @@ workflow:
             \   （甜点、含糖饮料、糖醋、蜜汁这类）才填搜到的糖；其它一律填 0。\n   填 0 是估计，不是搜到的值 —— 照规矩 3 写 source，别谎报出处。\n\
             \   （为什么宁可估计也要填：App 那边一旦这道菜没有 per100g，六个键会全部\n   按 0 计。填五个真数 + 一个估计的 0，比显示一排\
             \ 0 更接近事实。）\n\n6. 一条都凑不齐就输出 {} —— 不要编数字。数字有出处比数字好看重要。"
-        selected: false
+        selected: true
         title: 营养折算
         type: llm
         vision:
@@ -883,7 +966,7 @@ workflow:
       positionAbsolute:
         x: 2071.2221006132954
         y: 147.20719906766303
-      selected: false
+      selected: true
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -1009,7 +1092,7 @@ workflow:
         selected: false
         title: 只要菜名
         type: if-else
-      height: 147
+      height: 123
       id: '1789999000001'
       position:
         x: 380
@@ -1042,7 +1125,7 @@ workflow:
           completion_params:
             temperature: 0.2
           mode: chat
-          name: qwen3.7-plus
+          name: qwen3.7-flash
           provider: langgenius/tongyi/tongyi
         prompt_template:
         - id: 7f3a1c20-1111-4a2b-9c30-000000000001
@@ -1057,7 +1140,7 @@ workflow:
         - id: 7f3a1c20-1111-4a2b-9c30-000000000002
           role: user
           text: ''
-        selected: true
+        selected: false
         title: 认菜
         type: llm
         vision:
@@ -1075,7 +1158,7 @@ workflow:
       positionAbsolute:
         x: 380
         y: 640
-      selected: true
+      selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -1102,7 +1185,7 @@ workflow:
       width: 241
       zIndex: 0
     viewport:
-      x: -96.89373103182606
-      y: 163.04430944528661
+      x: -1485.893731031826
+      y: 339.0443094452867
       zoom: 0.6175242680765113
   rag_pipeline_variables: []
