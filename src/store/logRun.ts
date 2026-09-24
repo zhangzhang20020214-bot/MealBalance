@@ -56,11 +56,26 @@ import { useSyncExternalStore } from 'react'
 import { formatTime, toISODate } from '../lib/date'
 import { countableItems } from '../lib/dishMatch'
 import { mergeMeals } from '../lib/mergeMeals'
+import { recognizeByNames } from '../lib/recognizeAgent'
 import { dropDraftPhotos, getDraftPhotos } from './draftPhotos'
 import { recognizeOne, type RecognitionOutcome } from './recognizeOne'
 import { addMeal, getSnapshot } from './store'
 import { clearUnlogged, type UnloggedMeal } from './unlogged'
 import type { MealItem } from './types'
+
+/**
+ * 「算完还是一道能计量的菜都没有」时说的话 —— **两条路共用这一句**。
+ *
+ * ⚠️ 2026-09-24 改过一次。打字那份原来有自己的一句（「这几道菜没算出营养
+ * （食物库里没有）」），理由是那句「联网也没查到」对它不成立 —— 当时打字这条
+ * 路是在**本地**拿食物库的常见分量凑的，压根没联网。
+ *
+ * 现在不成立了：打字那份在记入日记这一刻**也交给食衡算**（`recognizeByNames`），
+ * 库外菜走的是同一条「博查联网搜」的链。两条路的失败语义于是完全一样，
+ * 各留一句只会让同一种归宿在屏幕上长成两个样子 —— 而它们本来就是一件事。
+ */
+const NO_NUTRITION =
+  '这一餐没算出营养（食物库里没有，联网也没查到），就先不记了 —— 免得日记里多一条 0 kcal。'
 
 /* ------------------------------------------------------------
    那一趟的状态
@@ -222,10 +237,44 @@ export function startLogRun(meal: UnloggedMeal, kind: 'log' | 'adjust'): void {
  * 用户看到的菜序和上次那张卡一致。
  *
  * **从不抛**：三种归宿全在返回值里。
+ *
+ * ## 打字来的那份（`meal.from === 'text'`）走的是**另一个分支**
+ *
+ * 那份草稿**一张照片都没有**（见 `store/unlogged.ts` 文件头），所以它：
+ *
+ *   · **不读 IDB** —— 直接拿草稿里的菜名去问食衡（`recognizeByNames`）。
+ *     **营养仍然是食衡算的**：这条路上库外菜一样走它那条「抽取库外菜 →
+ *     博查联网搜 → 营养折算」的链（那个分支的判据是「有没有库里没有的菜」，
+ *     不是「有没有图」）。少了这一步，库里没有的菜就只剩本地那一份常见分量，
+ *     那不是食衡算出来的数。
+ *   · ⚠️ **不能靠「读出来是空的」来认它。** 照片是**单槽**的
+ *     （`draftPhotos.ts` 的 `'current'`）—— 打字这份写下去时照片位上还留着
+ *     上一批，读它会算出**上一餐的菜**，再用这份草稿的 `slot` / `at` 落盘。
+ *     静默配错，是这里最坏的一种错。所以分叉必须在**读照片之前**。
+ *   · 那道 `countableItems` 闸在打字这一支里**要自己再走一次** ——
+ *     它在函数尾部，而那一行在照片分支的后面，走不到。
  */
 const computeForLog = async (
   meal: UnloggedMeal
 ): Promise<{ ok: true; items: MealItem[] } | { ok: false; message: string }> => {
+  if (meal.from === 'text') {
+    /*
+      档案和记录现取，理由同下面那段（过敏拦截的输入不能是过期的）。
+      打字这一支只需要它俩，所以在这里取一次就够了。
+    */
+    const { profile, meals } = getSnapshot()
+    const names = meal.items.map((i) => i.name)
+    const out = await recognizeByNames({ names, slot: meal.slot, profile, meals })
+    /*
+      ⚠️ `null` 有两种成因（上游挂了 / 模型没给出可用的菜名），归宿是同一个：
+      **不落盘**。和拍照那条路失败时的归宿一致。
+    */
+    if (!out || countableItems(out.items).length === 0) {
+      return { ok: false, message: NO_NUTRITION }
+    }
+    return { ok: true, items: out.items }
+  }
+
   const photos = await getDraftPhotos()
   if (photos.length === 0) {
     return { ok: false, message: '那张照片已经不在本机了，没法重新算一遍营养。再发一次图试试。' }
@@ -280,10 +329,7 @@ const computeForLog = async (
     return { ok: false, message: fail ? fail.message : '这一趟没能算出来，稍等一下再试一次。' }
   }
   if (countableItems(merged.items).length === 0) {
-    return {
-      ok: false,
-      message: '这一餐没算出营养（食物库里没有，联网也没查到），就先不记了 —— 免得日记里多一条 0 kcal。',
-    }
+    return { ok: false, message: NO_NUTRITION }
   }
   return { ok: true, items: merged.items }
 }
@@ -350,15 +396,24 @@ const logUnlogged = (meal: UnloggedMeal, items: MealItem[]): void => {
       拿它落盘就是一条 0 kcal 的记录，而它长得和一条真的记录一模一样。
     */
     items,
-    // 这一条本来就是「拍餐盘」来的，缩略图是那时留下的
-    source: '拍餐盘',
+    /*
+      来源按草稿是哪条路来的分（2026-09-24）。**不能一律写「拍餐盘」**：
+      打字问出来的那几道菜既不是拍的、也不是他自己填的表，日记里写着「拍餐盘」
+      是在陈述一件没发生过的事（`chatMeal.ts` 为同一件事写过一条注释：
+      不是手动却写手动，那个词叫作撒谎）。
+    */
+    source: meal.from === 'text' ? '对话记录' : '拍餐盘',
     date: toISODate(takenAt),
     time: formatTime(takenAt),
     ...(meal.thumb ? { thumb: meal.thumb } : {}),
   })
-  clearUnlogged()
+  /*
+    只清**这一份**所在的位（两个存档位，见 `store/unlogged.ts` 文件头）：
+    记掉拍的那一餐不该顺手扔掉打字那份 —— 那份还没被问过。
+  */
+  clearUnlogged(meal.from)
   // 照片的使命到这儿就结束了 —— 不清的话它能一直躺在用户的浏览器里
-  void dropDraftPhotos()
+  if (meal.from === 'photo') void dropDraftPhotos()
   setLogRun({ phase: 'logged', meal })
 }
 

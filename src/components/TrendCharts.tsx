@@ -187,6 +187,7 @@ function ScoreChart({ points }: { points: DayPoint[] }) {
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full" aria-hidden>
         {/* 60 分那条参考线 —— 固定刻度下它才是一条有意义的线 */}
         <line x1="0" y1={y(60)} x2="100" y2={y(60)} stroke="#e3e8e5" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+
         {segs.map((seg) => (
           <polyline
             key={seg[0].index}

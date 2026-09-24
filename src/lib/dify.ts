@@ -298,6 +298,52 @@ export async function* recognizeStream(opts: DifyRecognizeOptions): AsyncGenerat
   yield* parseSse(res.body)
 }
 
+export interface DifyTextRecognizeOptions {
+  /** 走 buildAgentQuery() 拼出来的完整 JSON —— 菜名在 `input.text` 里 */
+  query: string
+  user: string
+  signal?: AbortSignal
+}
+
+/**
+ * 食衡,**不带图**的那一趟（2026-09-24）。
+ *
+ * 给打字问出来的那份草稿用:它在「记入日记」时要算营养,而一张照片都没有。
+ * 走的是**同一个端点** `/api/recognize` —— 服务端判「有没有 `file` 这一项」
+ * 决定发不发 `files`（见 api/_lib/agent.ts 里那段）。
+ *
+ * ⚠️ **唯一的结构差别就是没有 `file`。** 别在这里补一个空 Blob 占位:
+ * 服务端会按 MIME 判扩展名,空文件先撞上「图片是空文件」那个 400。
+ *
+ * ⚠️ 食衡那条工作流里「联网查营养」那个分支的判据是**有没有库里没有的菜**,
+ * 不是有没有图 —— 所以这条路拿得到库外菜的每 100g 值,和拍照那条一样。
+ */
+export async function* recognizeTextStream(
+  opts: DifyTextRecognizeOptions
+): AsyncGenerator<DifyStreamChunk> {
+  const form = new FormData()
+  /*
+    ⚠️ `file` 一项**刻意不 append**。服务端判的是 `form.get('file') === null`
+    （「没有这一项」）而不是空字符串 —— append 一个空串会让它变成坏请求。
+  */
+  form.append('user', opts.user)
+  form.append(
+    'payload',
+    JSON.stringify({ query: opts.query, response_mode: 'streaming' satisfies 'streaming' })
+  )
+
+  const res = await fetch(`${BASE}/recognize`, {
+    method: 'POST',
+    body: form,
+    signal: opts.signal,
+  })
+
+  if (!res.ok) throw await toAgentError(res)
+  if (!res.body) throw new AgentError('NETWORK', '识别接口未返回响应体')
+
+  yield* parseSse(res.body)
+}
+
 /** 非流式调用 —— 一次性拿完整回答,适合短问短答 */
 export async function chatOnce(opts: DifyChatOptions): Promise<string> {
   const res = await fetch(`${BASE}/chat-messages`, {

@@ -376,6 +376,16 @@ export async function handleChat(req: Request): Promise<Response> {
        不是靠前后端两个地方各自记得传对一个值
 
    图片**不走** query 里的 images 字段 —— 见 agentContext.ts 里那段注释。
+
+   ------------------------------------------------------------
+   2026-09-24 起：**同一个端点也接「没有图」的请求**
+   ------------------------------------------------------------
+   打字问出来的那份草稿在「记入日记」时同样要交给食衡算营养，而它一张照片
+   都没有 —— 那一路只有一个菜名清单。与其另开一个端点（Key、限流、KV、
+   SSE 解析全要再来一遍），不如让 `file` 变成**可选**：没有它就走上面第 ②
+   步、跳过第 ① 步。工作流那边 `sys.files` 是空的，它按 query 里的菜名走，
+   库外菜照样会触发那条联网查营养的分支（那个分支的判据是「有没有库里没有
+   的菜」，不是「有没有图」）。
    ------------------------------------------------------------ */
 
 /**
@@ -466,16 +476,31 @@ export async function handleRecognize(req: Request): Promise<Response> {
     return json({ code: 'BAD_REQUEST', message: '请求不是合法的 multipart 表单' }, 400)
   }
 
-  const file = asUpload(form.get('file'))
-  if (!file) return json({ code: 'BAD_REQUEST', message: '缺少图片文件' }, 400)
-  if (file.size === 0) return json({ code: 'BAD_REQUEST', message: '图片是空文件' }, 400)
-  if (file.size > MAX_UPLOAD_BYTES) {
+  /*
+    ⚠️ **`file` 这一项可以没有**（2026-09-24）。
+
+    打字问出来的那份草稿在「记入日记」时同样要交给食衡算营养，而它一张照片
+    都没有 —— 那一路只把菜名放在 query 里（见 recognizeAgent.ts 的
+    `recognizeByNames`）。**没有 `file` 这一项 = 文字那一趟**：跳过下面整个
+    上传步骤，发一个不带 `files` 的提问，Dify 那边 `sys.files` 就是空的。
+
+    ⚠️ 这跟「传了个不合法的文件」是两件事，别混成同一个 400：前者是正常
+    请求（没有就是没有），后者是坏请求。`form.get()` 对「没有这一项」给
+    `null`，对空字符串给 `''` —— 所以判的是 `null`。
+  */
+  const rawFile = form.get('file')
+  const file = asUpload(rawFile)
+  if (rawFile !== null && !file) {
+    return json({ code: 'BAD_REQUEST', message: '图片文件不合法' }, 400)
+  }
+  if (file && file.size === 0) return json({ code: 'BAD_REQUEST', message: '图片是空文件' }, 400)
+  if (file && file.size > MAX_UPLOAD_BYTES) {
     return json({ code: 'PAYLOAD_TOO_LARGE', message: '图片太大，请换一张。' }, 413)
   }
 
-  const type = (file.type || '').toLowerCase()
-  const ext = IMAGE_EXT[type]
-  if (!ext) {
+  const type = file ? (file.type || '').toLowerCase() : ''
+  const ext = file ? IMAGE_EXT[type] : undefined
+  if (file && !ext) {
     return json(
       { code: 'UNSUPPORTED_IMAGE', message: `不支持的图片格式：${type || '未知'}` },
       415
@@ -506,55 +531,65 @@ export async function handleRecognize(req: Request): Promise<Response> {
 
   const streaming = payload.response_mode !== 'blocking'
 
-  /* ---------- ① 上传 ---------- */
-  const bytes = await file.arrayBuffer()
+  /* ---------- ① 上传（文字那一趟没有这一步） ---------- */
+  /*
+    `uploadId` 是 `let` + 可选：没有文件时它一直是 `undefined`，
+    下面第 ② 步据此决定发不发 `files`。**不要**在这里 return 掉 ——
+    没有文件是正常请求，不是错误。
+  */
+  let uploadId: string | undefined
 
-  // 重新构造 FormData,而不是把原始字节连同 content-type 一起转发。
-  // 两个原因:
-  //   · 文件名要由服务端定(见 IMAGE_EXT)—— 转发就等于把客户端的文件名
-  //     原样交给 Dify,而那个名字可能带一个不在白名单里的扩展名
-  //   · 手动设 content-type 会和 fetch 自己生成的 boundary 对不上,
-  //     接收端直接解析失败。所以这里**不设** content-type,让 fetch 自己带
-  const uploadForm = new FormData()
-  uploadForm.append('file', new Blob([bytes], { type }), `plate${ext}`)
-  uploadForm.append('user', user)
+  if (file) {
+    const bytes = await file.arrayBuffer()
 
-  let uploaded: Response
-  try {
-    uploaded = await fetch(`${DIFY_BASE}/files/upload`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${API_KEY}` },
-      body: uploadForm,
-      // 客户端断开(用户点了「停止分析」)时一并取消,不白烧一次视觉调用
-      signal: req.signal,
-    })
-  } catch (err) {
-    return json(
-      { code: 'UPSTREAM_UNREACHABLE', message: `无法连接 Dify：${(err as Error).message}` },
-      502
-    )
-  }
+    // 重新构造 FormData,而不是把原始字节连同 content-type 一起转发。
+    // 两个原因:
+    //   · 文件名要由服务端定(见 IMAGE_EXT)—— 转发就等于把客户端的文件名
+    //     原样交给 Dify,而那个名字可能带一个不在白名单里的扩展名
+    //   · 手动设 content-type 会和 fetch 自己生成的 boundary 对不上,
+    //     接收端直接解析失败。所以这里**不设** content-type,让 fetch 自己带
+    const uploadForm = new FormData()
+    uploadForm.append('file', new Blob([bytes], { type }), `plate${ext}`)
+    uploadForm.append('user', user)
 
-  if (!uploaded.ok) {
-    const detail = await uploaded.text().catch(() => '')
-    // 单独给一个 code:这个失败几乎总是 Dify 侧的**配置**问题
-    // (应用「功能」里没开图片上传、扩展名不在白名单、超过 10MB),
-    // 不是网络问题。混进 UPSTREAM_ERROR 里会让人往错的方向查半天
-    return json(
-      {
-        code: 'UPLOAD_FAILED',
-        message: `Dify 拒绝了这个文件（${uploaded.status}）${detail ? `：${detail.slice(0, 300)}` : ''}`,
+    let uploaded: Response
+    try {
+      uploaded = await fetch(`${DIFY_BASE}/files/upload`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${API_KEY}` },
+        body: uploadForm,
+        // 客户端断开(用户点了「停止分析」)时一并取消,不白烧一次视觉调用
+        signal: req.signal,
+      })
+    } catch (err) {
+      return json(
+        { code: 'UPSTREAM_UNREACHABLE', message: `无法连接 Dify：${(err as Error).message}` },
+        502
+      )
+    }
+
+    if (!uploaded.ok) {
+      const detail = await uploaded.text().catch(() => '')
+      // 单独给一个 code:这个失败几乎总是 Dify 侧的**配置**问题
+      // (应用「功能」里没开图片上传、扩展名不在白名单、超过 10MB),
+      // 不是网络问题。混进 UPSTREAM_ERROR 里会让人往错的方向查半天
+      return json(
+        {
+          code: 'UPLOAD_FAILED',
+          message: `Dify 拒绝了这个文件（${uploaded.status}）${detail ? `：${detail.slice(0, 300)}` : ''}`,
       },
       uploaded.status === 429 ? 429 : 502
     )
   }
 
-  const uploadId = ((await uploaded.json().catch(() => ({}))) as { id?: string }).id
-  if (!uploadId) {
-    return json({ code: 'UPLOAD_FAILED', message: 'Dify 没有返回 upload_file_id' }, 502)
+    const id = ((await uploaded.json().catch(() => ({}))) as { id?: string }).id
+    if (!id) {
+      return json({ code: 'UPLOAD_FAILED', message: 'Dify 没有返回 upload_file_id' }, 502)
+    }
+    uploadId = id
   }
 
-  /* ---------- ② 带图提问 ---------- */
+  /* ---------- ② 提问（有图带 `files`，没图就只发 query） ---------- */
   let upstream: Response
   try {
     upstream = await fetch(`${DIFY_BASE}/chat-messages`, {
@@ -566,7 +601,12 @@ export async function handleRecognize(req: Request): Promise<Response> {
         response_mode: streaming ? 'streaming' : 'blocking',
         // ⚠️ 必须与上面 upload 的那个 user 完全一致
         user,
-        files: [{ type: 'image', transfer_method: 'local_file', upload_file_id: uploadId }],
+        // 没有 `uploadId` = 文字那一趟，整个 `files` 键都不出现
+        //（发一个空数组是替工作流做决定，和 `buildAgentQuery` 里不传 `mode`
+        //  是同一条口径）。Dify 那边 `sys.files` 就是空的
+        ...(uploadId
+          ? { files: [{ type: 'image', transfer_method: 'local_file', upload_file_id: uploadId }] }
+          : {}),
         ...(typeof payload.conversation_id === 'string' && payload.conversation_id
           ? { conversation_id: payload.conversation_id }
           : {}),

@@ -4010,6 +4010,7 @@ const AT = new Date(2020, 0, 2, 8, 5).getTime()
     outcomes: [okOutcome()],
     thumbs: [thumbOf(1)],
     profileId: 'p-a',
+    from: 'photo',
   })
   check('**一道菜都没有的那一次不进草稿**（点「记入日记」会写进一条 0 kcal 的记录）', blocked === null)
 
@@ -4018,6 +4019,7 @@ const AT = new Date(2020, 0, 2, 8, 5).getTime()
     outcomes: [okOutcome(), okOutcome(), okOutcome()],
     thumbs: [thumbOf(1), thumbOf(2), thumbOf(3)],
     profileId: 'p-a',
+    from: 'photo',
     now: new Date(AT),
   })
   check('三张全成功 → 小图是第 1 张的', three.thumb === thumbOf(1), String(three.thumb))
@@ -4047,6 +4049,7 @@ const AT = new Date(2020, 0, 2, 8, 5).getTime()
     outcomes: [degradedOutcome('连不上识别服务，本次为演示数据'), okOutcome(), okOutcome()],
     thumbs: [thumbOf(1), thumbOf(2), thumbOf(3)],
     profileId: 'p-a',
+    from: 'photo',
   })
   check(
     '**第 1 张降级了 → 不拿第 1 张的小图，拿第 1 张成功的那张**',
@@ -4071,6 +4074,7 @@ const AT = new Date(2020, 0, 2, 8, 5).getTime()
     outcomes: [degradedOutcome('连不上识别服务，本次为演示数据'), { kind: 'ok', meal: demoMeal() }],
     thumbs: [thumbOf(1), thumbOf(2)],
     profileId: 'p-a',
+    from: 'photo',
   })
   check(
     '**演示数据不带小图**（那份菜是本地随机组的，和照片没有任何关系）',
@@ -4160,6 +4164,7 @@ const AT = new Date(2020, 0, 2, 8, 5).getTime()
     outcomes: [okOutcome()],
     thumbs: [thumbOf(1)],
     profileId: 'p-a',
+    from: 'photo',
   })
   check('没有草稿 → 不弹', shouldAskUnlogged(null, 'p-a') === false)
   check(
@@ -4192,12 +4197,13 @@ const fakeStorage = () => {
     outcomes: [okOutcome(), okOutcome()],
     thumbs: [thumbOf(1), thumbOf(2)],
     profileId: 'p-a',
+    from: 'photo',
     now: new Date(AT),
   })
 
   check('写成功（存储在那儿）', saveUnlogged(draft, { storage: box }) === true)
 
-  const back = loadUnlogged({ storage: box })
+  const back = loadUnlogged('photo', { storage: box })
   /*
     ⚠️ **逐字段比，不比 `JSON.stringify` 的整串。** 两条路径构造这个对象的顺序
     不同（写入那条是 `…, thumb, at`，解析那条是 `…, at, thumb`），序列化出来的
@@ -4224,21 +4230,40 @@ const fakeStorage = () => {
   */
   check(
     '**草稿的键正好这几个**（不许有 `undefined` 的空键，也不许混进 `photoUrl`）',
-    JSON.stringify(Object.keys(back).sort()) === JSON.stringify(['at', 'items', 'profileId', 'slot', 'thumb']),
+    JSON.stringify(Object.keys(back).sort()) ===
+      JSON.stringify(['at', 'from', 'items', 'profileId', 'slot', 'thumb']),
     Object.keys(back).join(',')
   )
   check('(锚点) 盘上确实有东西 —— 上面那条不是拿一份空文本在比', box._dump().includes('折耳根') && box._dump().includes('thumb-1'))
+  /*
+    `from` 必须**活着回来**。它漏进白名单重建的表现是「刷新一次字段静默消失」——
+    不报错、不抛，只是下一次 `loadUnlogged` 收下一份没有 `from` 的草稿，
+    然后 `KEYS[undefined]` 落进一个不存在的位。上面那条键集断言抓不到它
+    （键集是**读回来那份**的），所以这里单独钉一次。
+  */
+  check('**`from` 跟着过了一次读写**（漏进白名单重建会静默消失）', back.from === 'photo', String(back.from))
 
-  clearUnlogged({ storage: box })
-  check('清掉之后读出来是 null（「问过一次的不再问」全靠这一步）', loadUnlogged({ storage: box }) === null)
+  clearUnlogged('photo', { storage: box })
+  check('清掉之后读出来是 null（「问过一次的不再问」全靠这一步）', loadUnlogged('photo', { storage: box }) === null)
 
   /* 坏数据一律拒绝，而且**不许抛** —— 抛出去就是整页白给 */
-  const KEY_SHAPE = { profileId: 'p-a', slot: '午餐', at: 1, items: [{ foodId: 'rice', name: '米饭', grams: 150 }] }
+  const KEY_SHAPE = {
+    profileId: 'p-a',
+    from: 'photo',
+    slot: '午餐',
+    at: 1,
+    items: [{ foodId: 'rice', name: '米饭', grams: 150 }],
+  }
+  const { from: _drop, ...WITHOUT_FROM } = KEY_SHAPE
   const bad = [
     ['不是对象', 'x'],
     ['是 null', null],
     ['是数字', 42],
     ['缺 items', { profileId: 'p-a', slot: '午餐', at: 1 }],
+    /* 旧形状（升级前躺在盘上的那一份）—— 文件头「两个存档位」那段说的整份丢掉 */
+    ['没有 `from` 的旧形状', WITHOUT_FROM],
+    ['`from` 是别的值', { ...KEY_SHAPE, from: 'camera' }],
+    ['`from` 是空串', { ...KEY_SHAPE, from: '' }],
     ['items 不是数组', { ...KEY_SHAPE, items: 'x' }],
     ['items 是空的', { ...KEY_SHAPE, items: [] }],
     ['items 里是个空对象', { ...KEY_SHAPE, items: [{}] }],
@@ -4264,22 +4289,299 @@ const fakeStorage = () => {
 
   /* 形状对的那份必须收下 —— 不然上面那条可以靠「什么都不收」变绿 */
   const good = parseUnlogged(KEY_SHAPE)
-  check('(锚点) 形状对的那份收得下', good !== null && good.items[0].foodId === 'rice')
+  check(
+    '(锚点) 形状对的那份收得下，而且 `from` 没被吃掉',
+    good !== null && good.items[0].foodId === 'rice' && good.from === 'photo',
+    JSON.stringify(good)
+  )
+  check('`from: \'text\'` 那份也收得下（打字那条路要写的就是这个值）', parseUnlogged({ ...KEY_SHAPE, from: 'text' })?.from === 'text')
 }
 
 /* ---------- ⑥ 按档案清 ---------- */
 {
   const box = fakeStorage()
-  const mine = unloggedFrom({ meal: plate('agent'), outcomes: [okOutcome()], thumbs: [thumbOf(1)], profileId: 'p-a' })
+  const mine = unloggedFrom({
+    meal: plate('agent'),
+    outcomes: [okOutcome()],
+    thumbs: [thumbOf(1)],
+    profileId: 'p-a',
+    from: 'photo',
+  })
+  const typed = unloggedFrom({
+    meal: plate('agent'),
+    outcomes: [],
+    thumbs: [],
+    profileId: 'p-a',
+    from: 'text',
+  })
 
   saveUnlogged(mine, { storage: box })
   clearUnloggedFor('p-b', { storage: box })
   check(
     '**清的是别人的档案 → 我这份留着**（切档案是来回的，切回来还该看得到）',
-    loadUnlogged({ storage: box }) !== null
+    loadUnlogged('photo', { storage: box }) !== null
   )
   clearUnloggedFor('p-a', { storage: box })
-  check('清的是我这份 → 没了', loadUnlogged({ storage: box }) === null)
+  check('清的是我这份 → 没了', loadUnlogged('photo', { storage: box }) === null)
+
+  /*
+    ⚠️ **两个位都要清。** 这一节的调用点（删档案 / 重置成演示数据）的意思是
+    「这个人的东西都不留」，不是「把上次问的那一份处理掉」—— 少清一个位，
+    那份草稿会指着一个已经不存在的档案活着，下次进对话页弹出来的是
+    **另一个人的菜**（`shouldAskUnlogged` 本来正是拦这个的，但那份草稿
+    此刻还在盘上，等于把一个本该不存在的东西留在了那儿）。
+  */
+  saveUnlogged(mine, { storage: box })
+  saveUnlogged(typed, { storage: box })
+  check(
+    '(锚点) 清之前两个位上各有一份 —— 下面那条不是拿两个空位在比',
+    loadUnlogged('photo', { storage: box })?.from === 'photo' && loadUnlogged('text', { storage: box })?.from === 'text'
+  )
+  clearUnloggedFor('p-a', { storage: box })
+  check(
+    '**两个位一起清**（只清 `photo` 那条实现会让这条变红）',
+    loadUnlogged('photo', { storage: box }) === null && loadUnlogged('text', { storage: box }) === null
+  )
+
+  /* 反过来：只清一个位时另一个必须留着 —— 「记掉拍的那一餐」不该扔掉打字那份 */
+  saveUnlogged(mine, { storage: box })
+  saveUnlogged(typed, { storage: box })
+  clearUnlogged('photo', { storage: box })
+  check(
+    '**只清 `photo` → 打字那份原封不动**（记掉拍的一餐不该顺手扔掉还没被问过的那份）',
+    loadUnlogged('photo', { storage: box }) === null && loadUnlogged('text', { storage: box })?.from === 'text'
+  )
+}
+
+/* ---------- 打字问出来的那一份（`from: 'text'`） ----------
+
+  用户 2026-09-24：「如果我是问菜的做法，刷新后就不会弹出是否记入日记的窗口，
+  但我觉得这个是需要的」。他定的口径是**回答里有菜名就弹**。
+
+  这一节盯的是那条路上的三个连接处：`provisionalFromReply`（reply → 一份
+  `RecognizedMeal`）、`unloggedFrom`（那份 → 草稿，`from: 'text'`）、
+  以及**记入日记那一刻**由 `recognizeByNames` 把菜名交回给食衡算营养
+  （见下面那节 —— 本地凑数的那一版被用户驳回过）。
+*/
+const { provisionalFromReply } = await load('/src/lib/recognizeAgent.ts')
+const { parseAgentReply } = await load('/src/lib/agentReply.ts')
+
+/**
+ * 一份最小的合法回复 —— 只给这一节用得着的字段，其余交给解析器的默认值。
+ *
+ * ⚠️ 菜的清单裹在 `result` 里（模型的真实形状，见 `verify-reply.mjs` 的夹具）——
+ * 平铺在顶层的话解析器拿不到 `dishes`，于是这一节会全绿着什么都不测。
+ */
+const replyWith = (dishes, extra = {}) =>
+  parseAgentReply(
+    JSON.stringify({
+      blocked: false,
+      risk: { level: 'low', message: '', items: [] },
+      result: { mode: 'dish', title: '', dishes, advice: [], disclaimer: '' },
+      ...extra,
+    })
+  )
+
+{
+  /*
+    ① 回答里有菜名 → 一份草稿。仓里的菜走 `foodId`，库外的落哨兵 —— 和发图
+    那条路走的是**同一个** `matchDishes`，所以「库里有没有这道菜」两边的答案一致。
+  */
+  const meal = provisionalFromReply(replyWith([{ name: RICE.name }, { name: '折耳根' }]), '午餐')
+  check(
+    '(锚点) 回答里的菜名能变成一份结果（仓里的配上 id，库外的落哨兵）',
+    meal !== null && meal.items.length === 2 && meal.items[0].foodId === RICE.id,
+    JSON.stringify(meal?.items)
+  )
+
+  const typed = meal && unloggedFrom({ meal, outcomes: [], thumbs: [], profileId: 'p-a', from: 'text' })
+  check('**打字那份的 `from` 是 `text`**（写死成 `photo` 会让它顶掉他拍的那一餐）', typed?.from === 'text', String(typed?.from))
+  check(
+    '**打字那份不带小图**（空数组是它的真实形状 —— 它一张照片都没有）',
+    typed !== null && 'thumb' in typed === false,
+    String(typed?.thumb)
+  )
+  check(
+    '餐次跟着那份结果走，`at` 是一个时刻（弹窗上那句「今天 12:30 聊到的」要用它）',
+    typed?.slot === '午餐' && typeof typed?.at === 'number',
+    `${typed?.slot} / ${typed?.at}`
+  )
+
+  /*
+    ② 只有「未知菜品」→ 一条草稿都不写。`provisionalFromReply` 自己滤掉它们，
+    返回 null —— 这里断言的是**这条路真的不写**，不是那个正则长什么样。
+  */
+  check(
+    '**模型只回了一句「未知菜品」→ 不写草稿**（滤完一道菜都不剩）',
+    provisionalFromReply(replyWith([{ name: '未知菜品' }]), '午餐') === null
+  )
+  check('解析不出结构（没拿到回复）→ 不写草稿', provisionalFromReply(null, '午餐') === null)
+
+  /*
+    ③ 过敏拦截 → **不写草稿**。它交回来的是一份 `items: []`，`worthAsking`
+    判「不值得问」—— 拦下来的东西不该顺手变成一句「要补记这一餐吗」。
+  */
+  const blockedMeal = provisionalFromReply(
+    replyWith([], { blocked: true, risk: { level: 'high', message: '含花生', items: ['花生'] } }),
+    '午餐'
+  )
+  check('过敏拦截那一份的 `items` 是空的', blockedMeal !== null && blockedMeal.items.length === 0)
+  check(
+    '**过敏拦截 → 不写草稿**（拦下来的东西不该变成一句「要补记这一餐吗」）',
+    blockedMeal !== null && unloggedFrom({ meal: blockedMeal, outcomes: [], thumbs: [], profileId: 'p-a', from: 'text' }) === null
+  )
+
+  /*
+    ④ 两份**互不覆盖**：这是用户选的口径（「两份都留着」）。这一条和 ⑥ 里
+    那两条不重复 —— 那两条盯的是「清」，这条盯的是「写」。
+  */
+  const box = fakeStorage()
+  const photoDraft = unloggedFrom({
+    meal: plate('agent'),
+    outcomes: [okOutcome()],
+    thumbs: [thumbOf(1)],
+    profileId: 'p-a',
+    from: 'photo',
+  })
+  saveUnlogged(photoDraft, { storage: box })
+  if (typed) saveUnlogged(typed, { storage: box })
+  check(
+    '(锚点) 打字那份真的存下去了 —— 不然下面那条是拿两个空位在比',
+    loadUnlogged('text', { storage: box }) !== null && loadUnlogged('photo', { storage: box }) !== null
+  )
+  check(
+    '**先拍后打字 → 两份各在各的位上**（后写的没顶掉先写的）',
+    loadUnlogged('photo', { storage: box })?.from === 'photo' && loadUnlogged('text', { storage: box })?.from === 'text'
+  )
+}
+
+/* ---------- 打字那份的营养：**交给食衡**，不在本地凑 ----------
+
+   用户 2026-09-24 驳回过一版：「算营养计入日记这件事是交给食衡 agent 来做的」。
+   那一版是拿食物库的常见分量在本地配一份（`defaultPortionItems`），看着像结果、
+   其实不是食衡算的数 —— 库外菜在没有联网那一步时只剩一个本地编的值。
+
+   所以这一节拿一个假的 `/api/recognize` 盯住 `recognizeByNames` 这条链：
+   请求里**没有 `file`**、query 里**带着菜名**、回来的那份**走的是同一个
+   `matchDishes`**、以及认不出来时**返回 null 而不是抛**。
+*/
+{
+  const { recognizeByNames } = await load('/src/lib/recognizeAgent.ts')
+
+  /** 记下这一次请求长什么样 */
+  let sent = null
+  let upstream = ''
+  const realFetch = globalThis.fetch
+  globalThis.fetch = async (url, init) => {
+    if (String(url).includes('/recognize')) {
+      sent = init?.body instanceof FormData ? init.body : null
+      return new Response(upstream, { status: 200, headers: { 'content-type': 'text/event-stream' } })
+    }
+    return realFetch(url, init)
+  }
+
+  /** 一份 SSE 原文 —— `answer` 里裹着模型那坨 JSON */
+  const sseWith = (payload) =>
+    `data: ${JSON.stringify({ event: 'message', answer: JSON.stringify(payload) })}\n\n`
+  const okReply = (dishes) =>
+    sseWith({
+      blocked: false,
+      risk: { level: 'low', message: '', items: [] },
+      result: { mode: 'plate', title: '', dishes, advice: [], disclaimer: '' },
+    })
+
+  const app = (await load('/src/store/store.ts')).getSnapshot()
+
+  try {
+    /* ---------- ① 正常一趟：没有图、菜名在 query 里 ---------- */
+    upstream = okReply([{ name: RICE.name }, { name: '折耳根' }])
+    const out = await recognizeByNames({
+      names: [RICE.name, '折耳根'],
+      slot: '午餐',
+      profile: app.profile,
+      meals: app.meals,
+      user: 'verify-loop',
+    })
+
+    check('(锚点) 这一次真的发出去了一个请求', sent !== null)
+    check(
+      '**请求里没有 `file` 这一项**（有的话服务端会当成一次带图识别 —— 而它没有图）',
+      sent !== null && sent.get('file') === null,
+      sent === null ? '没发出去' : String(sent.get('file'))
+    )
+
+    const payload = JSON.parse(String(sent?.get('payload') ?? '{}'))
+    check(
+      '**菜名在 query 里**（不进 query 的话模型拿不到任何东西，只会回「未检测到图片」）',
+      typeof payload.query === 'string' &&
+        payload.query.includes(RICE.name) &&
+        payload.query.includes('折耳根'),
+      payload.query?.slice(0, 60)
+    )
+    check(
+      '走的是**食衡**那条路（`mode: plate`），不是快路径（`stage: names` 只要菜名、不算营养）',
+      payload.query.includes('"mode":"plate"') && !payload.query.includes('"stage"'),
+      payload.query.includes('"stage"') ? '带了 stage —— 那一路不算营养' : '完整那一路'
+    )
+    check('流式（非流式会让这里白等一整趟）', payload.response_mode === 'streaming', String(payload.response_mode))
+
+    /* ---------- ② 回来的那份和拍照那条路是同一把尺子 ---------- */
+    check(
+      '(锚点) 回答里的菜名变成了一份结果（仓里的配上 id，库外的落哨兵）',
+      out !== null && out.items.length === 2 && out.items[0].foodId === RICE.id,
+      JSON.stringify(out?.items)
+    )
+    check(
+      '**库外的菜落哨兵、不是被丢掉**（丢掉的话「库里没有」这件事就没人知道了）',
+      out !== null && out.items[1].foodId === SENTINEL.foodId,
+      String(out?.items?.[1]?.foodId)
+    )
+    check(
+      '`engine` 是 `agent`（这份克数是库里/联网给的，不是本地随机组的）',
+      out?.engine === 'agent',
+      String(out?.engine)
+    )
+    check(
+      '(锚点) 带营养的那一份确实进来了 —— 不然「联网查回来的值」这条断言是空的',
+      out !== null && out.items[0].grams === RICE.defaultGrams,
+      `${out?.items?.[0]?.grams}g vs ${RICE.defaultGrams}g`
+    )
+
+    /* ---------- ③ 认不出来 / 上游挂了 → null，而且不抛 ---------- */
+    upstream = okReply([{ name: '未知菜品' }])
+    check(
+      '**模型只回了一句「未知菜品」→ null**（滤完一道菜都不剩）',
+      (await recognizeByNames({ names: ['折耳根'], slot: '午餐', profile: app.profile, meals: app.meals, user: 'verify-loop' })) === null
+    )
+
+    upstream = sseWith({
+      blocked: true,
+      risk: { level: 'high', message: '含花生', items: ['花生'] },
+      result: { mode: 'plate', dishes: [] },
+    })
+    const blocked = await recognizeByNames({ names: [RICE.name], slot: '午餐', profile: app.profile, meals: app.meals, user: 'verify-loop' })
+    check(
+      '**过敏拦截那一份不带菜**（它交回来的是 items 空 —— 调用方据此不落盘）',
+      blocked === null || blocked.items.length === 0,
+      String(blocked?.items?.length)
+    )
+
+    upstream = ''
+    check(
+      '**上游一个字都没回 → null，不是抛**（抛出去会把一次正常回答推进降级分支）',
+      (await recognizeByNames({ names: [RICE.name], slot: '午餐', profile: app.profile, meals: app.meals, user: 'verify-loop' })) === null
+    )
+
+    globalThis.fetch = async () => {
+      throw new Error('network down')
+    }
+    check(
+      '**网络层直接挂 → 还是 null**（同上，这条路不许把失败报出去）',
+      (await recognizeByNames({ names: [RICE.name], slot: '午餐', profile: app.profile, meals: app.meals, user: 'verify-loop' })) === null
+    )
+  } finally {
+    globalThis.fetch = realFetch
+  }
 }
 
 /* ---------- ⑦ 这台机器没有存储 ---------- */
@@ -4288,9 +4590,10 @@ const fakeStorage = () => {
   let loaded = 'n/a'
   let saved = 'n/a'
   try {
-    loaded = loadUnlogged({ storage: null })
-    saved = saveUnlogged({ profileId: 'p-a', slot: '午餐', items: [], at: 1 }, { storage: null })
-    clearUnlogged({ storage: null })
+    loaded = loadUnlogged('photo', { storage: null })
+    saved = saveUnlogged({ profileId: 'p-a', from: 'photo', slot: '午餐', items: [], at: 1 }, { storage: null })
+    clearUnlogged('photo', { storage: null })
+    clearUnlogged('text', { storage: null })
     clearUnloggedFor('p-a', { storage: null })
   } catch (e) {
     threw = e

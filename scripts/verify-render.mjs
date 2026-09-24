@@ -4676,6 +4676,26 @@ const chatPageSrc = stripComments(await readFile('src/screens/ChatScreen.tsx', '
   TDZ 上撞一个 `ReferenceError`,而报错行号和真正的问题差着几百行。
 */
 const logRunSrc = stripComments(await readFile('src/store/logRun.ts', 'utf8'))
+/*
+  切源码窗口的两个小工具。**定义在第一次用到它们之前** —— 从前它们住在 ⑧b
+  那一段中间,而 2026-09-24 起前面(草稿那条链)也要切窗口了,晚定义一步就是
+  一个 `Cannot access 'windowBetween' before initialization`,报错行号和真正的
+  问题差着几百行。
+*/
+const windowAfter = (src, marker, len) => {
+  const i = src.indexOf(marker)
+  return i === -1 ? '' : src.slice(i, i + len)
+}
+/*
+  切成**两个标记之间**:边界永远是代码里真实存在的两个词,长度随写随变。
+  理由见下面 ⑧b 那一段的长注释(固定长度切会在注释变长之后把要看的东西
+  整个切在外面,或者更糟:切到下一个函数里,拿它的东西把断言蹭绿)。
+*/
+const windowBetween = (src, from, to) => {
+  const i = src.indexOf(from)
+  const j = src.indexOf(to)
+  return i === -1 || j === -1 || j <= i ? '' : src.slice(i, j)
+}
 check(
   '取到了对话页的源码(下面几条的锚点)',
   chatPageSrc.includes('sendPhotos') && chatPageSrc.length > 2000,
@@ -4815,6 +4835,8 @@ const renderUnlogged = (props) =>
 /** 那份草稿。含一道**未收录的菜** —— 它在弹窗上也要照常列出来 */
 const draftMeal = {
   profileId: 'p-a',
+  /** 这份是**拍的**那一份 —— 打字那份见下面 `textMeal`，两句文案不一样 */
+  from: 'photo',
   slot: '午餐',
   items: [
     { foodId: 'rice', name: riceFood.name, grams: 150 },
@@ -4842,6 +4864,11 @@ const unloggedHtml = renderUnlogged(UNLOGGED_BASE)
 const unloggedDegradedHtml = renderUnlogged({
   ...UNLOGGED_BASE,
   meal: { ...draftMeal, degradedReason: '连不上识别服务，本次为演示数据' },
+})
+/** 打字问出来的那一份 —— 句句都得对得上「我没拍照，我是打字问的」 */
+const unloggedTextHtml = renderUnlogged({
+  ...UNLOGGED_BASE,
+  meal: { ...draftMeal, from: 'text', items: [{ foodId: 'rice', name: riceFood.name, grams: 150 }] },
 })
 
 check(
@@ -4914,6 +4941,40 @@ check(
   unloggedHtml.includes('算出来的分量不是你选的') ? '在' : '不在'
 )
 
+/*
+  ⚠️ 打字那一份（`from: 'text'`，2026-09-24）：
+
+    · 它一张照片都没有，说「识别到的」是在陈述一件没发生过的事
+      （用户看到的是一句他不认识的描述，而那份菜确实来自他问的那句话）。
+    · **它也要等** —— 2026-09-24 探针实测：把菜名交给食衡、不给图，库外菜
+      照样走博查联网那条链，来回 **26 秒**（`private/probe-text-agent.mjs`）。
+      所以它和拍照那份一样必须说「要等十几秒」；曾经写过的「不用等」是
+      本地凑数那一版的遗留，点完盯着不动的屏幕会以为它死了。
+
+  反过来的半边也要钉：**打字那份不许出现「识别到的」**。只钉「有『聊到的』」
+  是不够的 —— 两句都在的时候那条断言照样绿。
+*/
+check(
+  '**打字那份说「聊到的」,不说「识别到的」**(它一张照片都没有)',
+  unloggedTextHtml.includes('聊到的这几道菜') && !unloggedTextHtml.includes('识别到的'),
+  `聊到的 ${unloggedTextHtml.includes('聊到的这几道菜')} / 识别到的 ${unloggedTextHtml.includes('识别到的')}`
+)
+check(
+  '**打字那份照实说要等**(它同样交给食衡算,库外菜要联网 —— 实测 26 秒)',
+  unloggedTextHtml.includes('要等十几秒') && !unloggedTextHtml.includes('不用等'),
+  `要等十几秒 ${unloggedTextHtml.includes('要等十几秒')} / 不用等 ${unloggedTextHtml.includes('不用等')}`
+)
+check(
+  '**而它说的那句是「问一遍食衡」,不是「拿这张照片重新算」**(它一张照片都没有)',
+  unloggedTextHtml.includes('拿这几道菜问一遍食衡'),
+  unloggedTextHtml.includes('拿这张照片') ? '说了「这张照片」' : '说的是那几道菜'
+)
+check(
+  '(锚点) 两份都真的渲染出来了 —— 上面两条不是拿空串在比',
+  unloggedTextHtml.length > 400 && unloggedTextHtml.includes(riceFood.name) && unloggedHtml.includes('识别到的'),
+  `打字 ${unloggedTextHtml.length} 字符 / 拍的那份 ${unloggedHtml.length} 字符`
+)
+
 /* ---------- ⑦b 点完「记」之后那张提示卡(2026-09-24 下午) ---------- */
 
 /*
@@ -4968,6 +5029,23 @@ check(
   '**「调整分量再记」那条说的是打开记录面板,不是「会自动记进日记」**(那条出口不落盘)',
   noticeAdjustHtml.includes('记录面板') && !noticeAdjustHtml.includes('会自动记进日记'),
   noticeAdjustHtml.includes('记录面板') ? '说了面板' : '说成会自动记进日记了 —— 那是一句假话'
+)
+/*
+  ⚠️ **这张卡够不着草稿的 `from`**（`noticeFor` 只给 kind/done/error），而它两个
+  来源共用 —— 打字那份点完「记入日记」看到的就是它，而那份**一张照片都没有**。
+  所以这里不是「按来源分叉」，是**两条路都不许提图**：用户 2026-09-24 晚点着
+  这句「正在拿这张照片算营养」问过一次「为什么写的是这张照片」。
+  ⚠️ 两条出口都要查：`adjust` 那句原来也带着「拿这张照片」。
+*/
+check(
+  '**卡上不许提「照片」**(打字那份点完也是这张卡,而它一张照片都没有)',
+  !noticeHtml.includes('照片') && !noticeAdjustHtml.includes('照片'),
+  noticeHtml.includes('照片') || noticeAdjustHtml.includes('照片') ? '提了照片' : '没提'
+)
+check(
+  '**但它仍然说清按下之后算什么**（通用不等于含糊:那一句得在)',
+  noticeHtml.includes('正在算这一餐的营养'),
+  noticeHtml.includes('正在算这一餐的营养') ? '在' : '只剩一句「加载中」那样的话'
 )
 /*
   失败那一句是**这一趟唯一会说话的地方** —— 用户可能早就把卡关了,所以那一句
@@ -5097,6 +5175,37 @@ check(
   chatPageSrc.includes('shouldAskUnlogged(') && chatPageSrc.includes('loadUnlogged()'),
   `shouldAskUnlogged ${chatPageSrc.includes('shouldAskUnlogged(')}`
 )
+/*
+  ⚠️ 打字那条路也要写草稿（2026-09-24，用户：「问菜的做法，刷新后就不会弹出
+  是否记入日记的窗口，但我觉得这个是需要的」）。从前唯一的写入口在 `sendPhotos`
+  里，纯文字聊完什么都不弹。
+
+  判据看的是**那三句连在一起**（`provisionalFromReply` → `from: 'text'` →
+  `saveUnlogged`）：少任何一句都是静默失效 —— 少第一句没有菜名可存，少第二句
+  落错位顶掉他拍的那一餐，少第三句什么都不发生。
+
+  ⚠️ 位置也在判据里：这一段必须在 `answer(` 的函数体里。写进 `sendPhotos`
+  与 `onSend` 之间那一段的话，上面 ④ 那一节「发图那条路不许出现 `answer(`」
+  的窗口断言会跟着变味（那段窗口是两个函数之间的全部文字）。
+*/
+const answerSrc = windowBetween(chatPageSrc, 'async function answer(', 'async function send(')
+check(
+  '(锚点) `answer()` 的函数体切到了 —— 下面那条不是拿空串在比',
+  answerSrc.includes('provisionalFromReply('),
+  answerSrc.trim() ? `${answerSrc.length} 字符` : '切不到'
+)
+check(
+  '**打字问出来的回答也写一份草稿**（`provisionalFromReply` → `from: \'text\'` → `saveUnlogged`）',
+  answerSrc.includes('provisionalFromReply(') &&
+    answerSrc.includes("from: 'text'") &&
+    answerSrc.includes('saveUnlogged('),
+  `provisional ${answerSrc.includes('provisionalFromReply(')} / from:text ${answerSrc.includes("from: 'text'")} / save ${answerSrc.includes('saveUnlogged(')}`
+)
+check(
+  '**挂载时两个存档位都看**（只读 `photo` 的话打字那份永远不问）',
+  chatPageSrc.includes("loadUnlogged() ?? loadUnlogged('text')"),
+  chatPageSrc.includes("loadUnlogged('text')") ? '看了' : '只看了 photo 那个位'
+)
 /**
  * 小图是从草稿里带过来的,不是写死的一串 —— 写死的话那条记录配的就不是这张照片。
  *
@@ -5116,25 +5225,6 @@ check(
   （两个出口 + 记录面板存完那一下），删掉其中一个还剩两处 —— 那条断言照样绿。
   数出现次数永远量不出「哪一条路清掉了」，得看**每个函数体里有没有**。
 */
-const windowAfter = (src, marker, len) => {
-  const i = src.indexOf(marker)
-  return i === -1 ? '' : src.slice(i, i + len)
-}
-/*
-  这几个函数体**不能用固定长度切**。
-
-  里面各有一段解释「为什么必须显式传 date/time」「为什么是食衡」的长注释,
-  长度会随注释改而变 —— 切 400 字符的那一版在注释变长之后会把 `addMeal(`
-  整个切在外面,断言于是变成「没找到」而红,或者更糟:切到下一个函数里去,
-  拿**它的** `clearUnlogged()` 把这一条蹭绿。
-
-  所以切成**两个函数之间**:边界永远是那两个函数自己,长度随写随变。
-*/
-const windowBetween = (src, from, to) => {
-  const i = src.indexOf(from)
-  const j = src.indexOf(to)
-  return i === -1 || j === -1 || j <= i ? '' : src.slice(i, j)
-}
 /*
   ⚠️ **这四个函数 2026-09-24 下午整个搬去了 `src/store/logRun.ts`。**
   名字和顺序**原样搬的**,所以这一段的改法只是把底稿从 `chatPageSrc` 换成
@@ -5196,10 +5286,56 @@ check(
   !computeSrc.includes("agent: 'chat'"),
   computeSrc.includes("agent: 'chat'") ? "写了 agent: 'chat' —— 库外那道菜会算出 0" : '没写 agent = 食衡'
 )
+/*
+  ⚠️ **这条的窗口只能是照片那一支的尾巴**（2026-09-24 收窄过一次）。
+
+  原来判的是整个 `computeSrc.includes('countableItems(')`。打字那一支
+  （`from === 'text'`）的开头也有一处 `countableItems(` —— 于是把**函数尾
+  照片那处**摘掉之后，打字那处仍然让判据为真，这条断言**弄坏了也不红**
+  （breaktest 报的就是这一条：`绿 补记 | 把 countableItems 那道闸摘了`）。
+
+  从读照片那句往后切：照片那一支只剩这一处。切不到时 `indexOf` 给 -1，
+  `slice(-1)` 是最后一个字符，判据为假 —— 会红，不会静默放过
+  （上面那条锚点同时盯着 `getDraftPhotos()` 在不在）。
+*/
+const photoTailSrc = computeSrc.slice(computeSrc.indexOf('const photos = await getDraftPhotos()'))
 check(
   '**算完还要过 `countableItems` 那道闸**(一道能计量的都没有 = 不记,宁可不记不记一条 0 kcal)',
-  computeSrc.includes('countableItems('),
-  computeSrc.includes('countableItems(') ? '有闸' : '没闸'
+  photoTailSrc.includes('countableItems('),
+  photoTailSrc.includes('countableItems(') ? '有闸' : '没闸'
+)
+/*
+  ⚠️ 打字那份（`from: 'text'`，2026-09-24）走的是**另一个分支**，两条都是静默失效：
+
+    · 它必须在**读照片之前**分叉。照片是单槽的（`draftPhotos` 的 `'current'`）
+      —— 打字那份写下去时照片位上还留着上一批，读它会算出**上一餐的菜**，
+      再用这份草稿的 `slot` / `at` 落盘。静默配错，这里最坏的一种。
+    · 它**要调食衡**（`recognizeByNames`）—— 营养是食衡算的，不是本地拿食物库
+      常见分量凑的。少了这一步，库外菜就永远只有一个本地编的数。
+    · 函数尾那道 `countableItems` 闸在照片分支**后面**，打字那一支走不到，
+      所以它得**自己再走一次**。少了它，一份全是库外菜的草稿会一路落盘成
+      一条 0 kcal 的记录。
+*/
+const textBranchSrc = windowBetween(computeSrc, "if (meal.from === 'text') {", 'const photos = await getDraftPhotos()')
+check(
+  '(锚点) 打字那一支切到了（窗口的右边界是那句读照片 —— 分叉挪到它下面就切不到）',
+  textBranchSrc.includes('recognizeByNames('),
+  textBranchSrc.trim() ? `${textBranchSrc.length} 字符` : '切不到'
+)
+check(
+  '**打字那一支不读照片**(读照片会拿上一批的图算出上一餐的菜)',
+  !textBranchSrc.includes('getDraftPhotos'),
+  textBranchSrc.includes('getDraftPhotos') ? '读了照片' : '没读'
+)
+check(
+  '**打字那一支把菜名交给食衡算**(本地拿食物库常见分量凑的那一版被驳回过)',
+  textBranchSrc.includes('recognizeByNames(') && !textBranchSrc.includes('defaultPortionItems'),
+  textBranchSrc.includes('recognizeByNames(') ? '交给食衡了' : '没交 —— 营养是本地凑的'
+)
+check(
+  '**打字那一支自己带那道闸**(函数尾那道在照片分支后面,它走不到)',
+  textBranchSrc.includes('countableItems('),
+  textBranchSrc.includes('countableItems(') ? '有闸' : '没闸 —— 库外菜会落成一条 0 kcal'
 )
 check(
   '**失败那条路上没有 `addMeal`**(`computeForLog` 只管算,落盘只在调用方的 then 里)',
@@ -5244,16 +5380,23 @@ check(
   runComputeSrc.match(/clearUnlogged\(|dropDraftPhotos\(/)?.[0] ?? '失败分支干净'
 )
 
+/*
+  ⚠️ 2026-09-24 起 `clearUnlogged` **要带上是哪个位**（两个存档位，见
+  `store/unlogged.ts` 文件头）。所以判据从 `clearUnlogged()` 改成
+  `clearUnlogged(meal.from)` / `clearUnlogged(from)` —— 不带参数的写法现在
+  连 typecheck 都过不了，这里钉的是**清的是哪一位**这件事：清错位不会报错，
+  只是把另一份没被问过的草稿留在了盘上（或者把它清掉了）。
+*/
 check(
   '**两个出口各自都清了草稿,而且「记入日记」是先写日记、再清草稿**'
     + '（用户定的:问过一次的不再问 —— 判据只有「草稿还在不在」这一处）',
-  logUnloggedSrc.includes('clearUnlogged()') &&
-    logUnloggedSrc.indexOf('addMeal(') < logUnloggedSrc.indexOf('clearUnlogged()') &&
+  logUnloggedSrc.includes('clearUnlogged(meal.from)') &&
+    logUnloggedSrc.indexOf('addMeal(') < logUnloggedSrc.indexOf('clearUnlogged(meal.from)') &&
     logUnloggedSrc.includes('dropDraftPhotos()') &&
-    dismissSrc.includes('clearUnlogged()') &&
+    dismissSrc.includes('clearUnlogged(from)') &&
     dismissSrc.includes('dropDraftPhotos()'),
-  `写日记@${logUnloggedSrc.indexOf('addMeal(')} / 清草稿@${logUnloggedSrc.indexOf('clearUnlogged()')}`
-    + ` / 不用了那条:草稿 ${dismissSrc.includes('clearUnlogged()')} 照片 ${dismissSrc.includes('dropDraftPhotos()')}`
+  `写日记@${logUnloggedSrc.indexOf('addMeal(')} / 清草稿@${logUnloggedSrc.indexOf('clearUnlogged(meal.from)')}`
+    + ` / 不用了那条:草稿 ${dismissSrc.includes('clearUnlogged(from)')} 照片 ${dismissSrc.includes('dropDraftPhotos()')}`
 )
 /*
   ⚠️ 「调整分量再记」走的也是「先算」,而且预填的是**算出来的那份**
@@ -5491,11 +5634,21 @@ check(
 check(
   '**落盘三件齐全,而且写真排在清草稿前面**(先有记录再清来源)',
   logUnloggedSrc.indexOf('addMeal(') !== -1 &&
-    logUnloggedSrc.indexOf('addMeal(') < logUnloggedSrc.indexOf('clearUnlogged()') &&
-    logUnloggedSrc.indexOf('clearUnlogged()') < logUnloggedSrc.indexOf('dropDraftPhotos()'),
+    logUnloggedSrc.indexOf('addMeal(') < logUnloggedSrc.indexOf('clearUnlogged(meal.from)') &&
+    logUnloggedSrc.indexOf('clearUnlogged(meal.from)') < logUnloggedSrc.indexOf('dropDraftPhotos()'),
   `写日记@${logUnloggedSrc.indexOf('addMeal(')}`
-    + ` / 清草稿@${logUnloggedSrc.indexOf('clearUnlogged()')}`
+    + ` / 清草稿@${logUnloggedSrc.indexOf('clearUnlogged(meal.from)')}`
     + ` / 删照片@${logUnloggedSrc.indexOf('dropDraftPhotos()')}`
+)
+/*
+  ⚠️ **照片只属于拍的那一份。** 打字那份压根没往照片位写过东西，替它调
+  `dropDraftPhotos()` 删的是**上一批照片**（可能正是他还没记的那一餐的）。
+  这条钉的是「删照片那一步带条件」—— 上面那条只量顺序，量不出条件。
+*/
+check(
+  '**删照片那一步只在 `from === \'photo\'` 时走**（打字那份不许碰照片位,那是别人的照片）',
+  logUnloggedSrc.includes("meal.from === 'photo'") && dismissSrc.includes("from === 'photo'"),
+  `logUnlogged ${logUnloggedSrc.includes("meal.from === 'photo'")} / 不用了那条 ${dismissSrc.includes("from === 'photo'")}`
 )
 /*
   ⚠️ **`aliveRef` 那一对置位整个删掉了**(2026-09-24 下午)。它当年的用处是
@@ -7230,11 +7383,18 @@ const AT_YESTERDAY = AT_TODAY - 24 * 60 * 60 * 1000
 
 const PENDING_MEAL = {
   profileId: 'demo',
+  from: 'photo',
   slot: '午餐',
   items: [{ foodId: 'web:青团', name: '青团', grams: 80 }],
   thumb: 'data:image/jpeg;base64,PENDINGTHUMB',
   at: AT_TODAY,
 }
+/*
+  ⚠️ 打字那份（`README` 里那条路的另一半）：`from: 'text'`、**没有 `thumb`**。
+  它和上面那份在屏幕上只差第二行的来源词 —— 那正是这一组要钉的东西：
+  这一行十几秒后要**就地变成那条记录**，而记录的第二行是 `{time} · {source}`。
+*/
+const PENDING_TEXT_MEAL = { ...PENDING_MEAL, from: 'text', thumb: undefined }
 
 const renderPending = (run, divider = false) =>
   renderToStaticMarkup(
@@ -7273,6 +7433,24 @@ check(
 check(
   '**而钟点确实印着,而且印的是拍照那一刻**(和十几秒后那条真记录的 `time` 是同一个数)',
   textOf(computingHtml).includes('12:30') && textOf(computingHtml).includes('· 拍餐盘'),
+  textOf(computingHtml)
+)
+/*
+  ⚠️ 第二行整句是**那条真记录的第二行**（`DiaryScreen` 里 `{meal.time} · {meal.source}`），
+  所以来源得跟着草稿走：拍的那份写「拍餐盘」，打字那份写「对话记录」。
+  写死成「拍餐盘」的话，用户问一句「红烧肉怎么做」再点「记入日记」，日记页上这一行
+  会写着「拍餐盘」，而十几秒后**就地变成的那条记录**写着「对话记录」——
+  同一行前后两个说法，而这个组件存在的全部意义就是它会变成那一条。
+*/
+const computingTextHtml = renderPending({ phase: 'computing', kind: 'log', meal: PENDING_TEXT_MEAL })
+check(
+  '**打字那份那一行写「对话记录」,不写「拍餐盘」**（它十几秒后要变成的那条记录就是这么写的）',
+  textOf(computingTextHtml).includes('· 对话记录') && !textOf(computingTextHtml).includes('拍餐盘'),
+  textOf(computingTextHtml)
+)
+check(
+  '**反过来:拍的那份仍然写「拍餐盘」**(别为了这一条把两边都改成同一个词)',
+  textOf(computingHtml).includes('· 拍餐盘'),
   textOf(computingHtml)
 )
 /*

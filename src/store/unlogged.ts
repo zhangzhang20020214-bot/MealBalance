@@ -41,6 +41,31 @@
  *   · 类型上仍然**不需要 `engine` 字段**，理由和旧版一样：真正需要它的那一步
  *     不在这一层（现在它留在 `meal.engine` 上，由调用方决定要不要存小图）。
  *
+ * ## 2026-09-24 起有**两个**存档位，按「哪来的」分（`from`）
+ *
+ * 打字问出来的回答也算一份（用户那天定的：**回答里有菜名就弹**），于是同一个人
+ * 可能同时躺着两份：一份是他**拍**的那一餐，一份是他**问**到的那几道菜。
+ *
+ * 两件事必须记住：
+ *
+ *   · **两份都要留着**（用户选的，不是我想的）。所以键按来源分
+ *     （`KEYS`），`saveUnlogged` 按 `meal.from` 落位 —— 后写的那份**不会**
+ *     顶掉先写的那份。`clearUnlogged(from)` 也只清自己那一位。
+ *   · **`from` 是必需字段，不是可选。** 它是唯一能把两份分开的东西：
+ *     `thumb` 当不了判据（演示路径的照片草稿同样没有 thumb，见 `unloggedFrom`）。
+ *     旧形状（没有 `from`）**整份丢掉** —— 沿用下面「形状对不上就整份丢掉」那条
+ *     规矩，不加迁移。代价是升级那一刻正躺着的一句问话不再问，符合那个口径。
+ *
+ * 两份的**输入不同**，这是它们唯一实质的差别：拍的那份由食衡拿存下来的照片
+ * 重算（`store/logRun.ts` 的 `computeForLog`），打字那份**没有照片** —— 它把
+ * 草稿里的菜名交给食衡（`lib/recognizeAgent.recognizeByNames`），走的是**同一个
+ * 工作流的同一个端点**，只是 `files` 是空的。
+ *
+ * ⚠️ 打字那份的营养**也是食衡算的**，这一点别弄错：库外菜在那条路上一样会走
+ * 食衡里「抽取库外菜 → 博查联网搜 → 营养折算」那条链（那个分支的判据是
+ * 「有没有库里没有的菜」，不是「有没有图」）。曾经有一版是在本地拿食物库的
+ * 常见分量凑一份，那不是食衡算出来的数 —— 用户当天驳回了那个做法。
+ *
  * ## 三个读写的存储是**可注入**的
  *
  * Node 里没有 `window`（见 `image.ts` 的 `ImageDeps` 先例）。不注入的话这三个
@@ -58,17 +83,26 @@ import type { RecognizedMeal } from './recognize'
 import type { RecognitionOutcome } from './recognizeOne'
 import type { MealItem, MealSlot } from './types'
 
+/** 这份草稿是哪条路来的，也就是它住在哪个存档位（见文件头那段） */
+export type UnloggedFrom = 'photo' | 'text'
+
 /**
- * 键名带版本段，和 `mealbalance:v1` 同一个写法。
+ * 两个存档位的键名，都带版本段，和 `mealbalance:v1` 同一个写法。
  *
- * 这里**没有** `SCHEMA_VERSION` 那套迁移：形状对不上就整份丢掉（见
- * `parseUnlogged`），丢的是一句还没问出口的问话，不是谁的数据。
+ * `photo` 那个键**沿用旧名字**，所以老数据不用搬家。这里**没有**
+ * `SCHEMA_VERSION` 那套迁移：形状对不上就整份丢掉（见 `parseUnlogged`），
+ * 丢的是一句还没问出口的问话，不是谁的数据。
  */
-const UNLOGGED_KEY = 'mealbalance:unlogged:v1'
+const KEYS: Record<UnloggedFrom, string> = {
+  photo: 'mealbalance:unlogged:v1',
+  text: 'mealbalance:unlogged-text:v1',
+}
 
 export interface UnloggedMeal {
   /** 切档案之后不该在别人名下弹（见 `shouldAskUnlogged`） */
   profileId: string
+  /** 这一份是拍的还是打字问来的 —— 决定住哪个位、营养怎么算（见文件头那段） */
+  from: UnloggedFrom
   slot: MealSlot
   /**
    * 见文件头第 2 段：**一份菜名清单**。克数和营养在这一层不算 ——
@@ -189,6 +223,11 @@ export interface UnloggedInput {
   /** 逐张的缩略图，**按 `outcomes` 的下标对齐**；某张没算出来就是 undefined */
   thumbs: readonly (string | undefined)[]
   profileId: string
+  /**
+   * 这一份是哪条路来的。**必填**，没有默认值 —— 默认成 `'photo'` 就是让
+   * 打字那条路悄悄落错位（落进照片那个位，顶掉他拍的那一餐）。
+   */
+  from: UnloggedFrom
   /** 显式传入而不是内部取，理由同 `chatMeal.syntheticEntry` 的 `now`：自检要固定时间 */
   now?: Date
 }
@@ -208,6 +247,7 @@ export function unloggedFrom(input: UnloggedInput): UnloggedMeal | null {
 
   return {
     profileId: input.profileId,
+    from: input.from,
     slot: meal.slot,
     // 见文件头第 2 段：存的是一份**菜名清单**，克数在这一层不算也不印
     items: meal.items,
@@ -233,6 +273,8 @@ export function parseUnlogged(v: unknown): UnloggedMeal | null {
   const o = v as Record<string, unknown>
 
   if (typeof o.profileId !== 'string') return null
+  /* 没有 `from` 的旧形状整份丢掉（文件头「两个存档位」那段说清了代价） */
+  if (o.from !== 'photo' && o.from !== 'text') return null
   if (typeof o.slot !== 'string' || !MEAL_SLOTS.includes(o.slot as MealSlot)) return null
   if (typeof o.at !== 'number') return null
   if (o.thumb !== undefined && typeof o.thumb !== 'string') return null
@@ -246,9 +288,14 @@ export function parseUnlogged(v: unknown): UnloggedMeal | null {
     后者会在内存里留下一个 `thumb: undefined` 的键（`JSON.stringify` 虽然会跳过它，
     但 `'thumb' in meal` 是 true）—— `store.ts` 的 `addMeal` 为同一件事写过注释，
     自检里也正是拿「这个键在不在」当判据。
+
+    `from` **不是可选字段**，但它照样得出现在这份重建里 —— 这里是一份**白名单**，
+    没列出来的字段一个都进不去（文件头 :243-249 那条警告说的就是漏一个的后果：
+    不报错，表现是「刷新一次字段静默消失」）。
   */
   return {
     profileId: o.profileId,
+    from: o.from,
     slot: o.slot as MealSlot,
     items: o.items as MealItem[],
     at: o.at,
@@ -272,11 +319,17 @@ function storeOf(deps?: UnloggedDeps): StorageLike | null {
   return deps && 'storage' in deps ? (deps.storage ?? null) : appStorage()
 }
 
-export function loadUnlogged(deps?: UnloggedDeps): UnloggedMeal | null {
+/**
+ * 读某一个位上的草稿。
+ *
+ * 默认 `'photo'` —— 于是 `loadUnlogged()` 仍然读**拍的那份**，调用方不关心的
+ * 时候不用管有两个位这件事。
+ */
+export function loadUnlogged(from: UnloggedFrom = 'photo', deps?: UnloggedDeps): UnloggedMeal | null {
   const s = storeOf(deps)
   if (!s) return null
   try {
-    const raw = s.getItem(UNLOGGED_KEY)
+    const raw = s.getItem(KEYS[from])
     if (!raw) return null
     return parseUnlogged(JSON.parse(raw))
   } catch {
@@ -285,11 +338,16 @@ export function loadUnlogged(deps?: UnloggedDeps): UnloggedMeal | null {
 }
 
 /**
- * 写草稿 —— **就地覆盖**。
+ * 写草稿 —— **在它自己那个位上就地覆盖**（见文件头「两个存档位」那段）。
  *
- * 一次新的识别完成就替换掉上一次的：用户说的就是「上次识别到的**一餐**」（单数）。
- * 代价说清楚：同一会话里连拍两批，第一批没被问过就被覆盖了 ——
- * 这是**保守方向**的丢失，丢的只是一次记入机会。
+ * 同一个位上，一次新的识别完成就替换掉上一次的：用户说的就是
+ * 「上次识别到的**一餐**」（单数）。代价说清楚：同一会话里连拍两批，
+ * 第一批没被问过就被覆盖了 —— 这是**保守方向**的丢失，丢的只是一次记入机会。
+ *
+ * **跨位不覆盖**：打字那份写下去时，拍的那份原封不动（这是用户选的口径）。
+ *
+ * 签名里没有 `from` 参数 —— 位就是 `meal.from`，分两处传等于给了它一个
+ * 可以撒谎的机会（`meal.from` 是 `'photo'` 却写进 `text` 的位）。
  *
  * @returns 写成功没有。调用方**不需要**处理 false（见文件头最后一段）
  */
@@ -297,25 +355,26 @@ export function saveUnlogged(meal: UnloggedMeal, deps?: UnloggedDeps): boolean {
   const s = storeOf(deps)
   if (!s) return false
   try {
-    s.setItem(UNLOGGED_KEY, JSON.stringify(meal))
+    s.setItem(KEYS[meal.from], JSON.stringify(meal))
     return true
   } catch {
     return false
   }
 }
 
-export function clearUnlogged(deps?: UnloggedDeps): void {
+/** 只清**这一个位** —— 另一个位上的那份（另一个来源）留着 */
+export function clearUnlogged(from: UnloggedFrom, deps?: UnloggedDeps): void {
   const s = storeOf(deps)
   if (!s) return
   try {
-    s.removeItem(UNLOGGED_KEY)
+    s.removeItem(KEYS[from])
   } catch {
     /* 删不掉就删不掉 —— 下次读出来还是那份草稿，最多多问一次 */
   }
 }
 
 /**
- * 清掉**属于这个档案**的那份草稿，别人的留着。
+ * 清掉**属于这个档案**的草稿，别人的留着。
  *
  * `resetToSeed()` 和 `deleteProfile(id)` 用它：前者把当前档案整个换成演示档案
  * （而 `activeProfileId` 不变），后者删掉某一份 —— 两种情况下那份草稿都指向
@@ -324,10 +383,16 @@ export function clearUnlogged(deps?: UnloggedDeps): void {
  * 判据比「一律清掉」多一个 `profileId` 比较，因为**切档案是来回的**：
  * 在 A 里攒的草稿、切到 B 又删掉 B，不该顺手把 A 的那份也清掉 ——
  * 那会表现成「切回 A 再进对话页，怎么不问了」。
+ *
+ * **两个位都要看**：这两个调用点的意思是「这个人的东西都不留」，不是
+ * 「把上次问的那一份处理掉」。少清一个位，那份草稿会指着一个已经不存在的档案，
+ * 表现成「在 B 里问 A 攒的那几道菜」—— 而 `shouldAskUnlogged` 本来正是拦这个的。
  */
 export function clearUnloggedFor(profileId: string, deps?: UnloggedDeps): void {
-  if (loadUnlogged(deps)?.profileId !== profileId) return
-  clearUnlogged(deps)
+  for (const from of ['photo', 'text'] as const) {
+    if (loadUnlogged(from, deps)?.profileId !== profileId) continue
+    clearUnlogged(from, deps)
+  }
 }
 
 /**

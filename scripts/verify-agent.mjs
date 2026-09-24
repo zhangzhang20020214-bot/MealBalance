@@ -290,9 +290,61 @@ check(
 check('没有 conversation_id 时不带这个键', !('conversation_id' in (chatBody ?? {})), JSON.stringify(chatBody))
 
 // --- 校验与错误码 ---
-const noFile = await agent.handleRecognize(recognizeRequest({ file: null, ip: '10.5.0.2' }))
-check('缺 file 返回 400', noFile.status === 400, String(noFile.status))
-check('缺 file 的 code 是 BAD_REQUEST', (await noFile.json()).code === 'BAD_REQUEST')
+/*
+  ⚠️ **「没有 `file` 这一项」不是坏请求**（2026-09-24 改的口径）。
+
+  打字问出来的那份草稿在「记入日记」时要交给食衡算营养，而它一张照片都没有
+  —— 那一路只把菜名放在 query 里（见 `recognizeTextStream`）。所以这里断的是
+  三件事，缺任何一件都是**静默**的：
+
+    · 200 —— 不是 400；
+    · **上传那一步没被调用** —— 没图还去传，Dify 会拿到一个空文件；
+    · **`files` 键整个不出现** —— 发一个空数组是替工作流做决定，
+      而工作流那边读的是「有没有这个键」。
+*/
+{
+  const before = seen.uploads.length
+  const noFile = await agent.handleRecognize(recognizeRequest({ file: null, ip: '10.5.0.2' }))
+  const noFileText = await noFile.text()
+  check('没有 file 是「文字那一趟」,不是坏请求', noFile.status === 200, String(noFile.status))
+  check(
+    '而且走通了整条链路(SSE 里有回答)',
+    noFileText.includes('"answer":"你"'),
+    noFileText.slice(0, 80)
+  )
+  check(
+    '没有文件时**不**去上传',
+    seen.uploads.length === before,
+    `上传被调了 ${seen.uploads.length - before} 次`
+  )
+  const textBody = seen.bodies.at(-1)
+  check(
+    '没有文件时**不带** `files` 键(空数组也是替工作流做决定)',
+    !('files' in (textBody ?? {})),
+    JSON.stringify(textBody?.files)
+  )
+  check('没有文件时 query 照样原样透传', textBody?.query === '请分析这份餐盘', String(textBody?.query))
+}
+
+/*
+  反过来：**声明了 `file` 但形状不对**仍然是坏请求。这两种情况不能混成同一个
+  400 —— 混了的话，「文字那一趟」这个分支就永远测不出来。
+*/
+{
+  const form = new FormData()
+  form.append('file', '')
+  form.append('user', 'web-test')
+  form.append('payload', JSON.stringify({ query: '请分析这份餐盘', response_mode: 'streaming' }))
+  const bad = await agent.handleRecognize(
+    new Request('http://local/api/recognize', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '10.5.0.8' },
+      body: form,
+    })
+  )
+  check('声明了 file 但不是文件 → 400', bad.status === 400, String(bad.status))
+  check('它的 code 是 BAD_REQUEST', (await bad.json()).code === 'BAD_REQUEST')
+}
 
 const emptyFile = await agent.handleRecognize(
   recognizeRequest({ file: { name: 'a.jpg', type: 'image/jpeg', bytes: 0 }, ip: '10.5.0.3' })

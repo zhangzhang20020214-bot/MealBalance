@@ -44,6 +44,7 @@ import { buildChatQuery, SEND_PROFILE_TO_AGENT } from '../lib/agentContext'
 import { SESSION_USER } from '../lib/session'
 import { cutFrom as cutFromItems, opsFor, questionBefore, removeOne, type ChatOp } from '../lib/chatOps'
 import { mergeMeals } from '../lib/mergeMeals'
+import { provisionalFromReply } from '../lib/recognizeAgent'
 import { currentSlot } from '../lib/slots'
 import {
   discardAll,
@@ -314,10 +315,20 @@ export default function ChatScreen() {
    * （用户点完「记入日记」就翻去看日记，又折回来），也可能刚失败 —— 两种情况下
    * 屏幕上那张提示卡正在说这件事，再叠一张补记弹窗就是同一屏两句互相打架的话
    * （两张都是 `z-50`）。等他把那张卡处理掉（关掉 = 那一趟收掉），下次进来照样问。
+   *
+   * ⚠️ **两个存档位都在时先问拍的那份**（2026-09-24 起有两个位，见
+   * `store/unlogged.ts` 文件头）：他拍的那一餐是真吃进去的东西，打字聊到的
+   * 那几道菜可能只是在问做法 —— 先问前者。另一份**下次进这一页**再问。
+   *
+   * 故意**不在同一屏连问两份**：记完第一份会起一趟 log run，`LogNotice`
+   * 正在说「在算营养」，再叠一张补记弹窗就是上面那段警告的情形（两张 `z-50`）。
+   *
+   * `shouldAskUnlogged` 那一行**一个字不动** —— 判据仍然只有「这份草稿是不是
+   * 这个档案的」，加了第二个位不需要第二条判据。
    */
   useEffect(() => {
     if (getLogRun() !== null) return
-    const saved = loadUnlogged()
+    const saved = loadUnlogged() ?? loadUnlogged('text')
     if (!shouldAskUnlogged(saved, state.activeProfileId)) return
     const timer = window.setTimeout(() => {
       setUnlogged(saved)
@@ -394,11 +405,18 @@ export default function ChatScreen() {
    *
    * ⚠️ 这是**全 App 唯一**一处主动作废一趟。离开这一页**不作废**了：见下面那个
    * cleanup 里那段（那是 2026-09-24 三次「还是没记进日记」的病根）。
+   *
+   * ⚠️ **只清屏幕上的那一份**（两个存档位，见 `store/unlogged.ts` 文件头）：
+   * 清的是 `unlogged.from` 那个位，另一个位上的那份原封不动 ——
+   * 「不用了」说的是「这一份不用了」，不是「我这个人的草稿都不用」。
+   * 照片同理：`dropDraftPhotos()` 只在拍的那份上才有意义，
+   * 打字那份压根没写过照片位，去删它等于删**上一批照片**（可能是他还没记的那一餐的）。
    */
   const dismissUnlogged = () => {
+    const from = unlogged?.from ?? 'photo'
     cancelLogRun()
-    clearUnlogged()
-    void dropDraftPhotos()
+    clearUnlogged(from)
+    if (from === 'photo') void dropDraftPhotos()
     setUnlogged(null)
     setAskOpen(false)
   }
@@ -552,6 +570,39 @@ export default function ChatScreen() {
 
       // 对话页的最终口径:拦下来的东西一律只当提醒(见 demoteHardBlock 的注释)
       const shown = reply ? demoteHardBlock(reply) : null
+
+      /*
+        打字问出来的回答里也有菜名 —— 那几道菜同样该能被补记(2026-09-24)。
+
+        用户原话:「如果我是问菜的做法,刷新后就不会弹出是否记入日记的窗口,
+        但我觉得这个是需要的」。从前草稿**只有一处写入口**(下面 `sendPhotos`
+        里那一处),于是纯文字聊完,下次进这一页什么都不弹。
+
+        三件事都由被调的那两个函数自己兜着,这里**不写重复判断**:
+
+          · `provisionalFromReply` 一律不抛错 —— 所以这一段不会把一次正常回答
+            推进下面的 `catch`(那个 `catch` 是「降级成本地回答」,不是清理现场)。
+          · 它返回 `null`(没解析出结构 / 全是「未知菜品」)、或者 `blocked`
+            那份返回 `items: []` —— 两种都由 `unloggedFrom` 内部的 `worthAsking`
+            判成「不值得问」,落到 `draft` 是 `null`,于是不写。过敏拦截不弹补记窗。
+          · 空数组是**对**的入参,不是省事:打字那份压根没有照片,
+            `firstOkThumb([], [])` 给 `undefined`(不带小图),`okPhotoBlobs`
+            根本不会被调到。
+
+        ⚠️ **位置别挪到 `sendPhotos` 与 `onSend` 之间那一段** ——
+        `verify-render.mjs` 在那段窗口里断言「发图那条路不许出现 `answer(`」。
+      */
+      const textMeal = provisionalFromReply(shown, currentSlot())
+      if (textMeal) {
+        const draft = unloggedFrom({
+          meal: textMeal,
+          outcomes: [],
+          thumbs: [],
+          profileId: state.activeProfileId,
+          from: 'text',
+        })
+        if (draft) saveUnlogged(draft)
+      }
 
       setMessages((m) =>
         m.map((msg) =>
@@ -823,12 +874,17 @@ export default function ChatScreen() {
 
         存进去的 `items` 是**一份菜名清单**（2026-09-24 起）—— 克数和营养到
         「记入日记」那一刻才由食衡给,理由见 `store/unlogged.ts` 文件头第 2 段。
+
+        `from: 'photo'` 是**必填**的 —— `answer()` 里打字那条路也写草稿,
+        `from` 是唯一能把两份分开的东西（见那个文件头「两个存档位」那段）。
+        写错这个值不会报错,表现是打字那份顶掉他拍的那一餐。
       */
       const draft = unloggedFrom({
         meal: merged,
         outcomes,
         thumbs,
         profileId: state.activeProfileId,
+        from: 'photo',
       })
       if (draft) {
         saveUnlogged(draft)
@@ -1233,7 +1289,8 @@ export default function ChatScreen() {
         initial={adjusting?.items ?? []}
         initialSlot={adjusting?.meal.slot}
         initialThumb={adjusting?.meal.thumb}
-        source="拍餐盘"
+        // 来源跟着被调的那份草稿走 —— 打字那份在日记里写「拍餐盘」是假话
+        source={adjusting?.meal.from === 'text' ? '对话记录' : '拍餐盘'}
         {...(adjusting
           ? {
               date: toISODate(new Date(adjusting.meal.at)),
@@ -1241,8 +1298,10 @@ export default function ChatScreen() {
             }
           : {})}
         onSaved={() => {
-          clearUnlogged()
-          void dropDraftPhotos()
+          // 同上：只清被调的那一份所在的位，另一个位上的草稿留着
+          const from = adjusting?.meal.from ?? 'photo'
+          clearUnlogged(from)
+          if (from === 'photo') void dropDraftPhotos()
           setUnlogged(null)
           setLogRun(null)
         }}

@@ -26,6 +26,23 @@ import type { PendingRun } from '../store/logRun'
  * 同一条规矩：那一刻还没有数，印一个 0 或者是编一个数，都是在说一件没发生的事。
  * 这一行上唯一的时间数字是**拍照那一刻的钟点**（`meal.at`），因为那个确实知道。
  *
+ * ## ⚠️ 第二行是**那条真记录的第二行**，一个字都不许提前写死（2026-09-24 晚）
+ *
+ * 原来它印的是 `{钟点} · 拍餐盘`。可这份草稿还可能来自打字
+ * （`UnloggedMeal.from === 'text'`）—— 用户问一句「红烧肉怎么做」、点完
+ * 「记入日记」，日记页上这一行就写着「拍餐盘」，十几秒后**就地变成的那条记录**
+ * 却写着「对话记录」（`logUnlogged` 按 `from` 写 `source`）。同一行前后两个说法，
+ * 而这个组件存在的全部意义就是「它十几秒后要变成那一条」。用户那天的话：
+ *
+ *   「询问做法后加入日记也要和拍照片后加入日记一样，在日记页面有所显示」
+ *
+ * 所以来源跟着 `run.meal.from` 走 —— 和 `DiaryScreen` 里那条真记录的
+ * `{meal.time} · {meal.source}` 是同一个写法。
+ *
+ * ⚠️ 别把这一句换成「正在算…」之类的过程话：这一行的契约是**几何和文字都跟
+ * 那条真记录对齐**（高度、图标位、分割线缩进都是并排比的），提前印一句它变成
+ * 记录之后不会有的字，等于让它在最后一秒跳一下。
+ *
  * ## 为什么是受控的（和 `LogNotice` / `UnloggedMealSheet` 同一条理由）
  *
  * `renderToStaticMarkup` 不跑 effect，组件内部的 `useState` 在自检里**永远是初值**
@@ -78,7 +95,7 @@ export function PendingMealRow({
               {run.meal.slot} · 正在算这一餐的营养…
             </span>
             <span className="text-[13px] leading-[18px] text-muted">
-              {formatTime(at)} · 拍餐盘
+              {formatTime(at)} · {run.meal.from === 'text' ? '对话记录' : '拍餐盘'}
             </span>
           </div>
           <TypingDots />

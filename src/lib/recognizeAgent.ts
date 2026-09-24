@@ -22,7 +22,7 @@
  * 档案、当日摄入、过敏原全都跟着这个 JSON 走,一行新逻辑都不用写。
  */
 
-import { AgentError, chatStream, recognizeStream } from './dify'
+import { AgentError, chatStream, recognizeStream, recognizeTextStream } from './dify'
 import { advance, stageOfNode, type AnalyzeStage } from './analyzeStage'
 import { buildAgentQuery, buildChatQuery } from './agentContext'
 import { parseAgentReply, type AgentReply } from './agentReply'
@@ -173,8 +173,17 @@ function dishInputs(dishes: AgentReply['dishes']) {
  * 认不出菜、模型只回了半截 JSON,都只意味着「这一趟没有预结果」,让调用方
  * 继续等终稿就行。判断「这次到底成没成」是 `runRecognition` 的职责,
  * 只有那条路会抛。
+ *
+ * **导出是给对话页那条打字路用的**（2026-09-24，见 `store/unlogged.ts` 文件头）：
+ * 打字问出来的回答里也有菜名，那些菜同样该能被补记进日记。导出的理由和
+ * `dishInputs` 那段注释是同一条 ——「reply → 一份 `RecognizedMeal`」这件事
+ * **只有这一处实现**，那边再抄一遍迟早走散（抄的那份会漏掉 `unmatched`、
+ * 或者不滤 `NOT_A_DISH`，表现是草稿里躺着「未知菜品」）。
+ *
+ * 调用方不用自己兜两件事，都由它的契约保证：一律不抛错；`blocked` 那份返回
+ * `items: []`（空清单会被 `worthAsking` 判成「不值得问」，于是不弹补记窗）。
  */
-function provisionalFromReply(reply: AgentReply | null, slot: MealSlot): RecognizedMeal | null {
+export function provisionalFromReply(reply: AgentReply | null, slot: MealSlot): RecognizedMeal | null {
   if (!reply) return null
   // 过敏拦截:dishes 是空的,而风险信息本身就是全部内容
   if (reply.blocked) return { slot, items: [], engine: 'agent', agentReply: reply }
@@ -522,5 +531,78 @@ export async function recognizeNames(opts: {
   }
 
   if (!raw.trim()) return null
+  return provisionalFromReply(parseAgentReply(raw), opts.slot)
+}
+
+/**
+ * 文字那一趟 —— **只给菜名、不给图**,要的是一份带营养的 `RecognizedMeal`。
+ *
+ * ## 它为什么存在（2026-09-24）
+ *
+ * 打字问出来的回答里也有菜名，那些菜同样该能补记进日记（用户当天定的口径）。
+ * 但「记入日记」那一刻要算营养 —— 而**算营养这件事是食衡的活**，不是本地的：
+ * 食衡工作流里挂着「抽取库外菜 → 博查联网搜 → 营养折算」那条链，库外菜的
+ * 每 100g 值是它查回来的。原来这一支是拿食物库的常见分量在本地凑一份，
+ * 那不是食衡算的，是一份**长得像结果的东西**。
+ *
+ * 「库里有没有」这个判据**不在这里** —— 和拍照那条路同一道闸:
+ * `logRun.computeForLog` 算完再过一遍 `countableItems`。
+ *
+ * ## 为什么走 `/api/recognize` 而不是 `/api/chat-messages`
+ *
+ * 膳享+（`chatStream`）那条工作流里**没有查营养的节点**，库外菜会一路落到 0。
+ * 食衡那条有 —— 而它那个联网分支的判据是「**有没有库里没有的菜**」，
+ * 不是「有没有图」（见 `dify/食衡MealBalance.yml` 里那个 python 节点
+ * `has_missing`）。所以没有图它照样会去查。
+ *
+ * ⚠️ **一律不抛错，认不出就返回 null。** 调用方（`computeForLog`）把它当成
+ * 「这一趟没算出营养」，然后照旧不落盘 —— 与拍照那一路失败时的归宿一致。
+ * 这里抛出去只会把一次正常回答推进降级分支。
+ */
+export async function recognizeByNames(opts: {
+  /** 回答里报出来的菜名 —— 原样带过去，不在这里挑「库里的」 */
+  names: string[]
+  slot: MealSlot
+  profile: Profile
+  meals: MealEntry[]
+  signal?: AbortSignal
+  /** 覆盖会话标识，自检用 —— 和别的那几条路用同一个 */
+  user?: string
+}): Promise<RecognizedMeal | null> {
+  /*
+    ⚠️ 菜名要放进 `text`，**不能**只放进 mode。
+    ⚠️ `mode` 仍然是 `plate`：这几道菜是**一餐的菜**（要逐道列进 `result.dishes`），
+    而 plate 正是那个「一道都不许漏」的口径。工作流那边一条图都没收到，
+    所以这句话必须自己说清「菜名就是下面这些」。
+  */
+  const query = buildAgentQuery(opts.profile, opts.meals, {
+    text: `这一餐的菜是：${opts.names.join('、')}。（没有图片，菜名就是上面这些，请逐道照常分析）`,
+    mode: 'plate',
+  })
+
+  let raw = ''
+  try {
+    for await (const chunk of recognizeTextStream({
+      query,
+      user: opts.user ?? SESSION_USER,
+      signal: opts.signal,
+    })) {
+      if (chunk.event === 'message' || chunk.event === 'agent_message') {
+        if (chunk.answer) raw += chunk.answer
+      }
+      if (chunk.event === 'error') return null
+    }
+  } catch {
+    // 网络层挂了、被 abort 了、上游报错 —— 都只是「这一趟没算出营养」
+    return null
+  }
+
+  if (!raw.trim()) return null
+  /*
+    ⚠️ 复用 `provisionalFromReply`，**不要**在这里再写一遍「解析 → 匹配」。
+    它是「reply → 一份 `RecognizedMeal`」的唯一实现（见它自己的 JSDoc）:
+    抄一遍的那份迟早会漏掉 `per100g`（表现是「联网查回来的营养没进日记」）
+    或者不滤 `NOT_A_DISH`（草稿里躺着「未知菜品」）。
+  */
   return provisionalFromReply(parseAgentReply(raw), opts.slot)
 }
