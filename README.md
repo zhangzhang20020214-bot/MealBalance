@@ -256,12 +256,25 @@ JS 侧用 px 写 `matchMedia` 的话，用户一改浏览器默认字号两边�
 
 ```ini
 DIFY_API_BASE=https://api.dify.ai/v1
-DIFY_API_KEY=app-你的key
+DIFY_API_KEY=app-食衡的key
+DIFY_CHAT_API_KEY=app-膳享+的key
 ```
 
 然后重启 `npm run dev`。改动这个文件需要重启，因为它是在 Vite 启动时读入 `process.env` 的。
 
-**线上部署** —— 在 Vercel 项目的 Settings → Environment Variables 里设同名的两项。
+**线上部署** —— 在 Vercel 项目的 Settings → Environment Variables 里设同名的三项。
+
+> ⚠️ **是三个变量、两个 Key，别只配一个。** 对话页和识图页接的是**两个不同的
+> Dify 应用**，各有各的 Key：
+>
+> - `DIFY_API_KEY` —— 「食衡」，只给 `/api/recognize`（拍餐盘识图）用
+> - `DIFY_CHAT_API_KEY` —— 「膳享+」，只给 `/api/chat-messages`（对话页）用
+> - `DIFY_API_BASE` —— 可选，默认 `https://api.dify.ai/v1`
+>
+> 少配 `DIFY_CHAT_API_KEY` 会**静默退回用 `DIFY_API_KEY`**（见
+> `api/_lib/agent.ts` 的 `CHAT_API_KEY`）—— 对话照样能跑、一句错都不报，
+> 只是回答来自「食衡」而不是「膳享+」。**这是这个项目里最容易配错的一处：
+> 一个不报错的配置错误。**
 
 ### 为什么 Key 不能放前端
 
@@ -868,8 +881,9 @@ Dify 的 JSON ──▶ parseAgentReply 把项映射成 5 个字段     ← 这�
 
 推到 GitHub 后在 Vercel 导入即可，配置已经写在 `vercel.json` 里。
 
-**唯一需要手动做的一步**：在 Vercel 项目设置里加 `DIFY_API_KEY`（和可选的 `DIFY_API_BASE`）。
-不加也能跑，只是对话页会显示「演示模式」。
+**唯一需要手动做的一步**：在 Vercel 项目设置里加 `DIFY_API_KEY` 和 `DIFY_CHAT_API_KEY`
+（以及可选的 `DIFY_API_BASE`）—— **两个 Key 对应两个 Dify 应用**，配错时的症状
+见上面「接入 Dify agent」一节的告示。一个都不加也能跑，只是对话页会显示「演示模式」。
 
 换到 Netlify / Cloudflare Pages 也可以，逻辑不用改，只要换个薄适配层：
 
