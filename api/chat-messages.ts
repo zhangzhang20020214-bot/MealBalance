@@ -5,7 +5,8 @@
  * dev server 的中间件也用同一份,保证本地和线上行为一致。
  */
 
-import { handleChat } from './_lib/agent'
+// ⚠️ `.js` 不能省 —— 省了会让整个函数在加载阶段就崩(线上 500),理由见 api/_lib/agent.ts 文件头
+import { handleChat } from './_lib/agent.js'
 
 /**
  * Vercel 的 Node 运行时支持 Web 标准签名:导出 GET/POST 等函数,

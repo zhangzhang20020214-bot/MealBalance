@@ -17,6 +17,25 @@
  *
  * 换平台:Netlify 用 `export default async (req: Request) => handleChat(req)`,
  * Cloudflare Workers 直接 `export default { fetch: handleChat }`,逻辑不用动。
+ *
+ * 三个转发文件的 import 必须写 `.js` 扩展名(2026-09-24 修)
+ * ------------------------------------------------------------
+ * 也就是 `from './_lib/agent.js'`。**那个 `.js` 不是笔误,别顺手删掉。**
+ *
+ * package.json 里是 `"type": "module"`,而 Vercel 处理 api/ 是**逐个文件**
+ * 编译 TS → JS(Node 原生 ESM 解析,不做打包),import 说明符原样保留。
+ * Node 的 ESM 解析器要求相对路径写全,少一个扩展名就是:
+ *
+ *     ERR_MODULE_NOT_FOUND → 函数在**加载阶段**就崩 → 该文件所有端点一律 500
+ *
+ * 症状很好认:`/api/recognize` 只导出了 POST,GET 本该回 405;崩掉的时候
+ * 它回的是 500 —— 500 而不是 405,就说明根本没加载起来。
+ *
+ * 为什么本地怎么测都好:dev server 走的是 vite.config.ts 里那句
+ * `ssrLoadModule('/api/_lib/agent.ts')`,路径是写全的,正好绕过这条规则。
+ * **tsc 和 `npm run build` 也照样通过**(moduleResolution 是 bundler,
+ * 它允许省略扩展名,也不会在产物里补上)—— 这条只有线上会犯,
+ * 所以改完必须在线上打一次 `/api/status` 才算真验过,别信本地绿灯。
  */
 
 /* ------------------------------------------------------------

@@ -4,7 +4,8 @@
  * 和 api/chat-messages.ts 同构的薄适配层,逻辑在 api/_lib/agent.ts。
  * 分文件是因为 Vercel 用**文件路径**做路由 —— 这里一个文件就是一个端点。
  */
-import { handleRecognize } from './_lib/agent'
+// ⚠️ `.js` 不能省 —— 省了会让整个函数在加载阶段就崩(线上 500),理由见 api/_lib/agent.ts 文件头
+import { handleRecognize } from './_lib/agent.js'
 
 export const POST = (req: Request): Promise<Response> => handleRecognize(req)
 
