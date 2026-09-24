@@ -1,0 +1,221 @@
+@import 'tailwindcss';
+
+/* ============================================================
+   设计变量 —— 提取自 Figma「食衡 MealBalance · 设计规范」
+   26 个颜色变量 + 尺寸阶梯,命名沿用 Figma 的语义化分组。
+   ============================================================ */
+@theme {
+  /* ---- 品牌绿 brand/green ---- */
+  --color-brand: #34c759; /* brand/green      */
+  --color-brand-deep: #1f8a3c; /* brand/green-deep */
+  --color-brand-bg: #eaf6ee; /* brand/green-bg   */
+  --color-brand-tint: #dcf0e4; /* brand/green-tint */
+  --color-brand-line: #cbe8d4; /* brand/green-line */
+  --color-brand-text: #1f6b38; /* brand/green-text */
+
+  /* ---- 墨色与文字 ink / text ---- */
+  --color-ink: #0a0f0d; /* ink/900          */
+  --color-ink-soft: #141a17; /* ink/800          */
+  --color-muted: #8e8e93; /* text/secondary   */
+  --color-faint: #c7c7cc; /* text/tertiary    */
+  --color-on-dark-dim: #b3b8b6; /* text/on-dark-dim */
+
+  /* ---- 表面与分割 surface / line ---- */
+  --color-line: #e3e8e5; /* line/subtle      */
+  --color-card: #ffffff; /* surface/card     */
+  --color-screen: #eaf6ee; /* surface/screen   */
+
+  /* ---- 状态:危险 status/red ---- */
+  --color-danger: #ff3b30;
+  --color-danger-bg: #fdecec;
+  --color-danger-line: #fbc9c4;
+  --color-danger-text: #a61e1e;
+  --color-danger-body: #c0564e; /* 建议卡正文,比标题浅一档 */
+
+  /* ---- 正文色(建议卡 / 结论卡正文,比标题浅一档)---- */
+  --color-brand-body: #3a7a50;
+  --color-ink-body: #3a5a44;
+
+  /* ---- 状态:提醒 status/amber ---- */
+  --color-warn: #ff9500;
+  --color-warn-bg: #fff7e6;
+  --color-warn-line: #ffe3b3;
+  --color-warn-text: #8a5a00;
+  --color-warn-body: #a97c22;
+
+  /* ---- 状态:餐次 meal ---- */
+  --color-meal-bg: #fff3dc;
+  --color-meal-text: #c77b00;
+
+  /* ---- 字体族 ---- */
+  --font-sans:
+    'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', system-ui, -apple-system, sans-serif;
+  /* 数字与度量值统一用 Inter,与中文形成层级对比 */
+  --font-num: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+
+  /* ---- 圆角阶梯 ---- */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  /* ---- 设备尺寸(iPhone 17)---- */
+  --spacing-device-w: 402px;
+  --spacing-device-h: 874px;
+}
+
+/* ============================================================
+   底部安全距离 —— Screen 与 TabBar 共用
+   ------------------------------------------------------------
+   env(safe-area-inset-bottom) 只在设备**真的有一根 Home 横条**时才有值:
+   iPhone = 34px;Android 手势条、桌面浏览器一律报 0。
+
+   直接拿 env() 当底边留白,那两个报 0 的场景就会贴到屏幕最下沿 ——
+   标签栏离边只剩 14pt、对话页的输入栏离边 0pt,正好压进系统手势区:
+   手指够着别扭,从底部上滑回桌面时还容易误触到它们。
+
+   所以兜一个下限:有横条时让开横条,没有横条时也留出 16px 余量。
+   改这一个值,标签栏和所有页面的底部留白一起跟着动。
+   ============================================================ */
+:root {
+  --safe-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+@media (min-width: 40rem) {
+  /* 桌面上的机身是我们自己画的展示框,底部那 34pt 是**假的** Home
+     Indicator,env() 本来就该是 0 —— 这里不兜底,保持设计稿的原始间距,
+     免得桌面呈现和 Figma 对不上 */
+  :root {
+    --safe-bottom: 0px;
+  }
+}
+
+/* ============================================================
+   基础样式
+   ============================================================ */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* 真机:铺满整屏,下拉回弹时不露底色 */
+  background: var(--color-screen);
+}
+
+/* 桌面:深色底,让机身浮起来,像一件被展示的作品。
+   断点用 40rem,与 Tailwind 的 sm: 保持一致 —— 见 PhoneFrame.tsx 的 DESKTOP_QUERY */
+@media (min-width: 40rem) {
+  body {
+    background: #1a1d1b;
+  }
+}
+
+/* 数字用 Inter 并启用等宽数字,避免秒数跳动时宽度抖动 */
+.tnum {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 隐藏滚动条 —— 移动端滚动容器不该出现桌面滚动条 */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* 状态栏时间、标签栏等禁止选中,贴近原生手感 */
+.select-none-ios {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* ============================================================
+   滚轮的两端淡出 —— 年龄 / 身高 / 体重那三个轮子用
+   ------------------------------------------------------------
+   滚轮最关键的一眼是「上下两行退到后面去」,那是 UIPickerView 的观感来源。
+   用一条竖直的 mask 做,而不是给每一行算透明度:**只需要一条 CSS**,
+   而且它不随滚动变化 —— 行从中间滚过去,淡出的是固定的上下两端。
+
+   `-webkit-mask-image` 那份是给 iOS 15/16 的 Safari 的,它还没有
+   无前缀的 mask-image。两行都得留。
+   ============================================================ */
+.wheel-mask {
+  mask-image: linear-gradient(to bottom, transparent 0, #000 24%, #000 76%, transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 24%,
+    #000 76%,
+    transparent 100%
+  );
+}
+
+/* ============================================================
+   浮层动画 —— 用 iOS 的减速曲线,不是默认的 ease
+   ============================================================ */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+  左侧抽屉 —— 对话页的历史记录面板,是这个 App 里**唯一**从左边进来的浮层。
+  它不能用 `sheet-up`:那句话在说「从下往上」,而这块是「从左往右」,
+  曲线一样、方向不一样。
+*/
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* cubic-bezier(0.32,0.72,0,1) 是 iOS 模态面板的标准出场曲线 */
+.animate-sheet-up {
+  animation: sheet-up 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.animate-drawer-in {
+  animation: drawer-in 260ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.animate-fade-in {
+  animation: fade-in 200ms ease-out;
+}
+
+/* 分析中页的相机底座:缓慢呼吸,暗示"处理中"而非卡死 */
+@keyframes pulse-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(52, 199, 89, 0);
+  }
+}

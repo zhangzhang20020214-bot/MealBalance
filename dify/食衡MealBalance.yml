@@ -1,0 +1,1108 @@
+app:
+  description: ''
+  icon: smile
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: advanced-chat
+  name: 食衡MealBalance
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.2.22@9cea96ffc7977f536c02999c80ff1283b1819aab9b6fa2fdf789d0c6c7d03715
+    version: null
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: seekerliu/bocha:0.0.1@7d2dbad3f9d2652300d73bb8d91337e925f3c0daf9e0a9e285e060fb9dd7aadb
+    version: null
+kind: app
+version: 0.7.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - remote_url
+      - local_file
+      enabled: true
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: true
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: true
+    text_to_speech:
+      enabled: true
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1789300896618-source-llm-target
+      selected: false
+      source: '1789300896618'
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: code
+      id: 1789300716606-source-1789303129642-target
+      selected: false
+      source: '1789300716606'
+      sourceHandle: source
+      target: '1789303129642'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: answer
+      id: 1789303292519-source-answer-target
+      selected: false
+      source: '1789303292519'
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+      id: 1789303129642-source-1789999000001-target
+      selected: false
+      source: '1789303129642'
+      sourceHandle: source
+      target: '1789999000001'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: answer
+      id: 1789303414054-true-1789303457145-target
+      selected: false
+      source: '1789303414054'
+      sourceHandle: 'true'
+      target: '1789303457145'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: knowledge-retrieval
+      id: 1789303414054-false-1789300896618-target
+      selected: false
+      source: '1789303414054'
+      sourceHandle: 'false'
+      target: '1789300896618'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-source-1789895541850-target
+      selected: false
+      source: llm
+      sourceHandle: source
+      target: '1789895541850'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+      id: 1789895541850-source-1789904551200-target
+      selected: false
+      source: '1789895541850'
+      sourceHandle: source
+      target: '1789904551200'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: tool
+      id: 1789904551200-true-1789893592579-target
+      selected: false
+      source: '1789904551200'
+      sourceHandle: 'true'
+      target: '1789893592579'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: code
+      id: 1789904551200-false-1789895604860-target
+      selected: false
+      source: '1789904551200'
+      sourceHandle: 'false'
+      target: '1789895604860'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1789895572351-source-1789895604860-target
+      selected: false
+      source: '1789895572351'
+      sourceHandle: source
+      target: '1789895604860'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: code
+      id: 1789895604860-source-1789303292519-target
+      selected: false
+      source: '1789895604860'
+      sourceHandle: source
+      target: '1789303292519'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: 1789893592579-source-1789896269720-target
+      selected: false
+      source: '1789893592579'
+      sourceHandle: source
+      target: '1789896269720'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1789896269720-source-1789895572351-target
+      selected: false
+      source: '1789896269720'
+      sourceHandle: source
+      target: '1789895572351'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+      id: 1789999000001-true-1789999000002-target
+      selected: false
+      source: '1789999000001'
+      sourceHandle: 'true'
+      target: '1789999000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1789999000002-source-1789999000003-target
+      selected: false
+      source: '1789999000002'
+      sourceHandle: source
+      target: '1789999000003'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: if-else
+      id: 1789999000001-false-1789303414054-target
+      selected: false
+      source: '1789999000001'
+      sourceHandle: 'false'
+      target: '1789303414054'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 用户输入
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: user_context
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: user_context
+      height: 108
+      id: '1789300716606'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1789300896618'
+          - result
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 30
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: qwen3.7-plus
+          provider: langgenius/tongyi/tongyi
+        prompt_template:
+        - id: c20e40e6-1808-47ab-a706-456601c7b98f
+          role: system
+          text: "  一、角色\n\n  你是「食衡MealBalance」的饮食决策 Agent。你结合【用户健康档案】与【国家卫健委官方食养指南知识】，对用户输入的图片或文本，给出安全、可执行、合规的个性化饮食建议。\n\
+            \n  你不是医生：不做医疗诊断、不开处方、不承诺疗效。所有建议以官方食养指南为据，超出指南范围的内容须明确说明，不得编造。\n\n  二、输入（三份\
+            \ JSON 贴在最后）\n\n  · profile：healthGoals[] 用码 —— sugar_control 控糖 / oil_control\
+            \ 控油 / salt_control 控盐 / balanced 均衡 / body_management 身材管理；specialStage[]\
+            \ 用码 —— pregnancy / elderly / child / recovery；healthRestrictions[]（type/item/severity）。\n\
+            \  · input：mode 为 fridge / plate / dish / menu / ingredient 之一；另有 text\
+            \ 与 images。\n  · today_intake：已记录的餐次与克数、各项合计与目标、还缺哪几餐。用户问「今天吃多了吗」「还剩多少热量」时据此回答，不要反问。检索到的指南片段在\
+            \ {{#context#}}。\n\n  三、处理流程（严格按序）\n\n  第 1 步 · 硬规则拦截（最高优先级）：severity\
+            \ = high 的过敏/禁忌/用药项命中输入 → 直接返回 blocked: true，不生成建议；medium/low 不拦截，但在 advice\
+            \ 里给明确风险提示。特殊阶段额外规避：孕期规避酒精/生食/高汞鱼；儿童规避高糖高盐及易噎呛；老人注意软烂易吞咽。\n  第 2 步 · 知识定位（选对指南）：控糖→糖尿病、控盐→高血压、控油→高脂血症、身材管理→肥胖、痛风→高尿酸、肾病→慢性肾脏病、补钙/骨质疏松→骨质疏松、老人肌肉衰减→肌少症、儿童生长迟缓→生长迟缓、脑卒中/康复→脑卒中。回答优先引用\
+            \ {{#context#}}，未覆盖就明说「超出指南范围」，不编数值。\n  第 3 步 · 按 mode 生成建议；第 4 步 · 合规校验（禁医疗诊断、免责声明强制随每次返回）。\n\
+            \n  四、各模式输出要点\n\n  - fridge：识别食材→ingredients；推荐 2–4 道菜→dishes（reason/recipe/healthModification）；advice\
+            \ 搭配与用量。\n  - plate：**先把画面数清楚：有几样就列几样，一样都不许漏**（漏一样，后面的热量、钠、建议全跟着偏）。name\
+            \ 必须写成**通用菜名**，能拿去搜到营养值的那种（「红烧排骨」「蒜蓉西兰花」「草莓味乳饮料」）；不要写「妈妈做的」「XX 牌」这类修饰，也不要写「一份」「200g」「不清楚」这类不是菜名的东西。识别菜品→dishes（suitable\
+            \ 标记）；advice 进食顺序（先菜→肉→主食）、分量、风险。\n  - dish：做法步骤 recipe + 健康改良 healthModification，单菜品填\
+            \ dishes[0]。\n  - menu：识别全菜单→dishes（每道 suitable+reason）；advice 推荐点单组合。\n\
+            \  - ingredient：识别配料/营养标签→nutrition（ingredients/labels/riskItems）；advice\
+            \ 适配度+风险。\n\n  五、输出格式（只输出一个 JSON 对象，不要代码块/解释文字）\n\n  {\n    \"blocked\"\
+            : false,\n    \"risk\": { \"level\": \"high\", \"message\": \"检测到花生，与档案过敏项冲突，已拦截\"\
+            , \"items\": [\"花生\"] },\n    \"result\": {\n      \"mode\": \"fridge\"\
+            ,\n      \"title\": \"推荐餐食建议\",\n      \"ingredients\": [ { \"name\":\
+            \ \"鸡蛋\", \"category\": \"蛋白质\", \"note\": \"\" } ],\n      \"dishes\"\
+            : [\n        { \"name\": \"番茄炒蛋\", \"reason\": \"低油低盐，符合控盐目标\", \"recipe\"\
+            : [\"打蛋\",\"热锅少油\",\"翻炒\"], \"healthModification\": \"用橄榄油替代，减盐30%\",\
+            \ \"suitable\": true }\n      ],\n      \"nutrition\": { \"ingredients\"\
+            : [\"水\",\"白砂糖\"], \"labels\": {\"热量\":\"180kJ\",\"钠\":\"120mg\"}, \"\
+            riskItems\": [\"白砂糖\"] },\n      \"advice\": [\"建议先吃蔬菜再吃主食\", \"本餐油盐偏高，建议减少主食量\"\
+            ],\n      \"disclaimer\": \"本建议仅供参考，不构成医疗诊断或治疗意见。如有健康问题请咨询专业医生。\"\n  \
+            \  }\n  }\n\n  - blocked = true → 只返回 blocked + risk，不返回 result； - blocked\
+            \ = false → result 只填当前 mode 相关字段。（示例里的 ingredients / nutrition 属于 fridge\
+            \ / ingredient 模式；plate 模式不要填这两个键，要填 dishes。）\n  - disclaimer 文案固定，每次必须原样返回上面那句。\n\
+            \n  六、合规底线\n\n  1. 数值保真：克数/毫克/千卡/μmol/L/mmHg 必须来自指南原文，禁止编造或四舍五入。\n  2.\
+            \ 禁医疗化：禁止「诊断/治疗/治愈/逆转/降压降糖降脂」等表述。\n  3. 不越界：未覆盖就明说，不硬答。\n\n【食物库目录】识别菜品时,必须从下面这份目录里挑\
+            \ foodId\n\n主食:  rice=米饭(熟)｜brown-rice=糙米饭｜mantou=馒头｜noodles=面条(煮)｜whole-wheat-bread=全麦面包｜congee=白粥｜oatmeal=燕麦粥｜xiaolongbao=小笼包｜dumpling=猪肉饺子｜corn=玉米(煮)｜sweet-potato=红薯(蒸)\n\
+            蛋奶豆:  boiled-egg=煮鸡蛋｜fried-egg=煎鸡蛋｜milk=牛奶｜soy-milk=无糖豆浆｜tofu-firm=北豆腐｜tofu-soft=南豆腐｜yogurt=原味酸奶\n\
+            肉类:  braised-pork=红烧肉｜braised-ribs=红烧排骨｜kungpao-chicken=宫保鸡丁｜boiled-chicken=白切鸡｜roast-drumstick=烤鸡腿｜tomato-egg=番茄炒蛋｜pepper-pork=青椒肉丝｜twice-cooked-pork=回锅肉｜steak=煎牛排｜braised-beef=卤牛肉\n\
+            水产:  steamed-fish=清蒸鱼｜boiled-shrimp=白灼虾｜salmon=煎三文鱼｜boiled-fish-spicy=水煮鱼\n\
+            蔬菜:  lettuce-stir=清炒油麦菜｜spinach-garlic=蒜蓉菠菜｜broccoli=白灼西兰花｜cucumber-salad=凉拌黄瓜｜green-beans=干煸四季豆｜mapo-tofu=麻婆豆腐｜stir-veggies=素炒时蔬｜tomato-raw=番茄(生)\n\
+            水果:  apple=苹果｜banana=香蕉｜orange=橙子｜grape=葡萄｜blueberry=蓝莓｜watermelon=西瓜\n\
+            汤羹:  seaweed-egg-soup=紫菜蛋花汤｜tomato-beef-soup=番茄牛腩汤｜wintermelon-soup=冬瓜排骨汤\n\
+            饮品:  americano=美式咖啡｜latte=拿铁｜cola=含糖可乐｜bubble-tea=珍珠奶茶｜orange-juice=橙汁\n\
+            其他:  chips=薯片｜peanut=炒花生｜cake=蛋糕｜chocolate=巧克力\n\n挑 foodId 的五条规矩:\n1.\
+            \ 只能从上面这份目录里挑,**不要**用目录以外的任何 id\n2. foodId 填的是等号**左边**那个英文 id(比如 rice),不是右边的中文名字\n\
+            3. 这道菜在目录里没有对应项时,**不要输出 foodId 这个字段** —— 不要为了填满字段而编一个,编出来的 id 和真的在格式上一模一样,只会白费一次校验\n\
+            4. 不需要输出 grams。库里的每条都是「每 100g、熟食、可食部」的口径,用户会在 App 里自己确认份量\n5. **不要自己写\
+            \ per100g 和 source。** 你没法联网,编出来的数字会被下游当真并直接进总数。库外菜的营养由下游自己去查;查不到时 App\
+            \ 会明着写「按 0 计」——那比一个看着很真的错数字好。\n\n\n【用户健康档案】{{#1789303129642.profile_json#}}\n\
+            \n【用户这句话】{{#1789303129642.text#}}\n\n【今日摄入】{{#1789303129642.today_intake#}}"
+        - id: 61010f8f-1b64-4530-8b16-00f4a8bd66c9
+          role: user
+          text: ''
+        selected: false
+        title: LLM
+        type: llm
+        vision:
+          configs:
+            detail: high
+            variable_selector:
+            - sys
+            - files
+          enabled: true
+      height: 87
+      id: llm
+      position:
+        x: 1245.0325454831727
+        y: 309.2828981971871
+      positionAbsolute:
+        x: 1245.0325454831727
+        y: 309.2828981971871
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        answer: '{{#1789303292519.final_json#}}'
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 101
+      id: answer
+      position:
+        x: 2908.8319571609068
+        y: 309.2828981971871
+      positionAbsolute:
+        x: 2908.8319571609068
+        y: 309.2828981971871
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        dataset_ids:
+        - ccbnVTF965ULiaO3DfW+s7PrNKiz+gfSlTgUbeByEUj6gfAufDAjpMfbtacSKmMK
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: qwen3-rerank
+            provider: langgenius/tongyi/tongyi
+          top_k: 4
+        query_attachment_selector: []
+        query_variable_selector:
+        - '1789303129642'
+        - text
+        retrieval_mode: multiple
+        selected: false
+        title: 知识检索
+        type: knowledge-retrieval
+      height: 89
+      id: '1789300896618'
+      position:
+        x: 980
+        y: 282
+      positionAbsolute:
+        x: 980
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        code: "import json\ndef main(query: str) -> dict:\n    blocked = False\n \
+          \   blocked_items = []\n    profile = {}\n    text = \"\"\n    stage = \"\
+          \"\n    req = {}\n    try:\n        req = json.loads(query)\n        if\
+          \ not isinstance(req, dict):\n            req = {}\n        profile = req.get(\"\
+          profile\") or {}\n        inp = req.get(\"input\") or {}\n        text =\
+          \ (inp.get(\"text\") or \"\") if isinstance(inp, dict) else \"\"\n     \
+          \   # 这一次要哪一件事:\"\" = 完整那一路;\"names\" = 只要菜名(见 App 的 recognizeNames)\n \
+          \       stage = str(req.get(\"stage\") or \"\")\n    except Exception:\n\
+          \        # 这条 except 不只是异常处理,它是**纯文本提问的兜底路径**:\n        # query 不是 JSON\
+          \ 时 profile 保持为空,下面的过敏原拦截整段失效,\n        # 但请求照样成功、不报错。所以别删掉它,也别让它把异常抛出去。\n\
+          \        text = query or \"\"\n    # 前置硬拦截:只扫「用户这句话」,这里是对的 ——\n    # 误拦不发生在这一步,在节点\
+          \ 7,原因见那边的注释。\n    for r in (profile.get(\"healthRestrictions\") or []):\n\
+          \        if not isinstance(r, dict):\n            continue\n        if r.get(\"\
+          severity\") == \"high\" and r.get(\"type\") in (\"allergy\", \"taboo\",\
+          \ \"drug\"):\n            item = (r.get(\"item\") or \"\").strip()\n   \
+          \         if item and item in text:\n                blocked = True\n  \
+          \              blocked_items.append(item)\n    blocked_json = \"\"\n   \
+          \ if blocked:\n        message = \"检测到高危食材/成分「\" + \"、\".join(blocked_items)\
+          \ + \"」，与档案健康限制冲突，已拦截。\"\n        blocked_json = json.dumps({\n        \
+          \    \"blocked\": True,\n            \"risk\": {\"level\": \"high\", \"\
+          message\": message, \"items\": blocked_items},\n        }, ensure_ascii=False)\n\
+          \    # 今日摄入,原样透传给 LLM 节点。\n    # App 每次提问都带着 todayIntake(今日各餐明细 + 营养合计/目标\
+          \ + 缺哪几餐),\n    # 但节点 2 只挑它认识的键 —— 不透传的话这些数字就到此为止了,LLM 读不到,\n    # 用户问「今天盐吃多了吗」时它只能反问。\n\
+          \    # 暂时不想要这段的话,删掉这两行即可,不影响其它任何东西。\n    today = req.get(\"todayIntake\"\
+          ) if isinstance(req, dict) else None\n    today_intake = json.dumps(today,\
+          \ ensure_ascii=False) if today else \"\"\n    # 档案原样往下传。以前它只给上面的拦截逻辑用,模型那边是靠\
+          \ Dify 的「记忆」\n    # 把整条 query 当用户消息塞进提示词才看到的 —— 那条通道一关就静默失效,\n    # 而且不报错。现在改成显式透传,提示词里直接引用。\n\
+          \    profile_json = json.dumps(profile, ensure_ascii=False)\n    return\
+          \ {\n        \"blocked\": blocked,\n        \"blocked_json\": blocked_json,\n\
+          \        \"blocked_items\": blocked_items,\n        \"text\": text,\n  \
+          \      \"today_intake\": today_intake,\n        \"stage\": stage,\n    \
+          \    \"profile_json\": profile_json,\n    }\n"
+        code_language: python3
+        outputs:
+          blocked:
+            children: null
+            type: boolean
+          blocked_items:
+            children: null
+            type: array[string]
+          blocked_json:
+            children: null
+            type: string
+          profile_json:
+            children: null
+            type: string
+          stage:
+            children: null
+            type: string
+          text:
+            children: null
+            type: string
+          today_intake:
+            children: null
+            type: string
+        selected: false
+        title: 代码执行
+        type: code
+        variables:
+        - value_selector:
+          - sys
+          - query
+          value_type: string
+          variable: query
+      height: 51
+      id: '1789303129642'
+      position:
+        x: 380
+        y: 282
+      positionAbsolute:
+        x: 380
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        code: "import json\nimport re\n\nDISCLAIMER = \"本建议仅供参考，不构成医疗诊断或治疗意见。如有健康问题请咨询专业医生。\"\n\ndef main(llm_text: str, query: str) -> dict:\n    profile = {}\n    try:\n        req = json.loads(query)\n        if isinstance(req, dict):\n            profile = req.get(\"profile\") or {}\n    except Exception:\n        profile = {}\n\n    data = None\n    raw = (llm_text or \"\").strip()\n    if raw.startswith(\"```\"):\n        raw = re.sub(r\"^```[a-zA-Z]*\\s*\", \"\", raw)\n        raw = re.sub(r\"\\s*```$\", \"\", raw).strip()\n\n    try:\n        data = json.loads(raw)\n    except Exception:\n        m = re.search(r\"\\{.*\\}\", raw, re.S)\n        if m:\n            try:\n                data = json.loads(m.group(0))\n            except Exception:\n                data = None\n\n    if not isinstance(data, dict):\n        return {\n            \"valid\": False,\n            \"final_json\": json.dumps({\n                \"blocked\": False,\n                \"result\": {\n                    \"title\": \"服务暂时不可用\",\n                    \"advice\": [\"抱歉，本次生成结果解析失败，请重试。\"],\n                    \"disclaimer\": DISCLAIMER,\n                },\n            }, ensure_ascii=False),\n        }\n\n    blocked = bool(data.get(\"blocked\", False))\n    blocked_items = list((data.get(\"risk\") or {}).get(\"items\") or [])\n\n    if not blocked:\n        high_items = [\n            (r.get(\"item\") or \"\").strip()\n            for r in (profile.get(\"healthRestrictions\") or [])\n            if isinstance(r, dict)\n            and r.get(\"severity\") == \"high\"\n            and r.get(\"type\") in (\"allergy\", \"taboo\", \"drug\")\n        ]\n        result = data.get(\"result\") or {}\n        nutrition = result.get(\"nutrition\") or {}\n\n        # ===== 这一处就是那个 bug 的修复 =====\n        # 原来这里是:  haystack = json.dumps(result, ensure_ascii=False)\n        # 扫的是 result **全文** —— 连 advice / title / recipe /\n        # healthModification 一起扫。于是一个花生过敏的人问「晚餐吃什么」,\n        # LLM 写下「避免花生」这条完全正确的建议,反而被判定命中并拦截:\n        # 越是需要建议的人越拿不到建议。\n        # 而且它不确定 —— 同一句话跑两次,可能一次拦一次不拦。\n        #\n        # 现在只扫「用户真的会吃进去的东西」。\n        haystack = json.dumps({\n            \"dishes\": [\n                d.get(\"name\") for d in (result.get(\"dishes\") or []) if isinstance(d, dict)\n            ],\n            \"ingredients\": [\n                i.get(\"name\") if isinstance(i, dict) else i\n                for i in (result.get(\"ingredients\") or [])\n            ],\n            \"nutrition_ingredients\": nutrition.get(\"ingredients\") or [],\n            \"risk_items\": nutrition.get(\"riskItems\") or [],\n        }, ensure_ascii=False)\n\n        for item in high_items:\n            if item and item in haystack:\n                blocked = True\n                # 去重:LLM 自己可能已经把这个成分写进 risk.items 了,\n                # 不去重的话提示语会变成「花生、花生」\n                if item not in blocked_items:\n                    blocked_items.append(item)\n\n    # 2026-09-23:命中高危项时**不再整单拦截**。\n    # 原来的做法是把整份结果换成 blocked(dishes 一道都不返回),App 只能渲染\n    # 一张「已拦截」的卡,用户连这盘菜认出了几样都看不到。\n    # 现在:保留结果,把命中的成分写进**那道菜**的菜名括号里 ——\n    # App 里菜名的括号注释会被剥掉再匹配食物库,而显示和忌口判断看的是原名,\n    # 所以「番茄炒蛋（含鸡蛋）」既命中 tomato-egg,又会被标成「别吃」。\n    final = data\n    final[\"blocked\"] = False\n    result = final.get(\"result\") or {}\n    result[\"disclaimer\"] = DISCLAIMER\n\n    if blocked and blocked_items:\n        marked = 0\n        for d in (result.get(\"dishes\") or []):\n            if not isinstance(d, dict):\n                continue\n            name = (d.get(\"name\") or \"\").strip()\n            if not name or \"（\" in name:\n                continue\n            # 只看这道菜**自己**的名字和配料 —— 扫整段会把「避免鸡蛋」这种\n            # 建议也算成命中(工作流上一版就在这儿栽过,见上面 haystack 那段)\n            own = json.dumps({\n                \"name\": name,\n                \"ingredients\": (d.get(\"nutrition\") or {}).get(\"ingredients\") or [],\n            }, ensure_ascii=False)\n            hit = [it for it in blocked_items if it and it in own]\n            if hit:\n                d[\"name\"] = name + \"（含\" + \"、\".join(hit) + \"）\"\n                marked += 1\n\n        # 一道都没标上(命中项只在整餐级的配料表里)时,退一步:整餐提示,\n        # 但**不撒谎说拦了** —— 用户至少知道这一餐里有他不能吃的东西\n        msg = (\n            \"检测到「\" + \"、\".join(blocked_items) + \"」，与档案健康限制冲突：\"\n            + (\"带「含…」标记的那道菜不要吃，其余的照常。\" if marked else \"这一餐里有你不能吃的东西，请逐道核对。\")\n        )\n        final[\"risk\"] = {\"level\": \"high\", \"message\": msg, \"items\": blocked_items}\n\n    final[\"result\"] = result\n\n    return {\"valid\": True, \"final_json\": json.dumps(final, ensure_ascii=False)}\n"
+        code_language: python3
+        outputs:
+          final_json:
+            children: null
+            type: string
+          valid:
+            children: null
+            type: boolean
+        selected: false
+        title: 代码执行 2
+        type: code
+        variables:
+        - value_selector:
+          - '1789895604860'
+          - merged
+          value_type: string
+          variable: llm_text
+        - value_selector:
+          - sys
+          - query
+          value_type: string
+          variable: query
+      height: 51
+      id: '1789303292519'
+      position:
+        x: 2670.1537151432935
+        y: 147.20719906766303
+      positionAbsolute:
+        x: 2670.1537151432935
+        y: 147.20719906766303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: fefd8269-2e37-40ff-b8fe-0bd8c54ecc61
+            value: true
+            varType: boolean
+            variable_selector:
+            - '1789303129642'
+            - blocked
+          id: 'true'
+          logical_operator: and
+        selected: false
+        title: 条件分支
+        type: if-else
+      height: 123
+      id: '1789303414054'
+      position:
+        x: 680
+        y: 282
+      positionAbsolute:
+        x: 680
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        answer: '{{#1789303129642.blocked_json#}}'
+        selected: false
+        title: 直接回复 2
+        type: answer
+        variables: []
+      height: 101
+      id: '1789303457145'
+      position:
+        x: 980
+        y: 109.1444636887509
+      positionAbsolute:
+        x: 980
+        y: 109.1444636887509
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        default_value:
+        - key: text
+          type: string
+          value: ''
+        - key: json
+          type: array[object]
+          value: '[]'
+        error_strategy: default-value
+        is_team_authorization: true
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: The keywords or phrases to search
+            ja_JP: 検索キーワードまたはフレーズ
+            pt_BR: As palavras-chave ou frases para pesquisar
+            zh_Hans: 搜索关键词或语句
+          input_schema: null
+          label:
+            en_US: query
+            ja_JP: query
+            pt_BR: query
+            zh_Hans: query
+          llm_description: 搜索关键词或语句
+          max: null
+          min: null
+          multiple: false
+          name: query
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: noLimit
+          form: llm
+          human_description:
+            en_US: The time range for the search results. Available options noLimit,
+              oneYear, oneMonth, oneWeek, oneDay. Default is noLimit
+            ja_JP: 検索結果の時間範囲。利用可能なオプションは noLimit, oneYear, oneMonth, oneWeek, oneDay
+              です。デフォルトは noLimit です
+            pt_BR: O intervalo de tempo para os resultados da pesquisa. Opções disponíveis
+              noLimit, oneYear, oneMonth, oneWeek, oneDay. O padrão é noLimit
+            zh_Hans: 搜索的时间范围，可选值为 noLimit, oneYear, oneMonth, oneWeek, oneDay。默认为
+              noLimit
+          input_schema: null
+          label:
+            en_US: freshness
+            ja_JP: freshness
+            pt_BR: freshness
+            zh_Hans: freshness
+          llm_description: 搜索的时间范围，可选值为 noLimit, oneYear, oneMonth, oneWeek, oneDay。默认为
+            noLimit
+          max: null
+          min: null
+          multiple: false
+          name: freshness
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: 10
+          form: llm
+          human_description:
+            en_US: Number of search results to retrieve (1-10), default is 10
+            ja_JP: 検索結果の数(1-10)、デフォルトは10
+            pt_BR: Número de resultados de pesquisa para recuperar (1-10), padrão
+              é 10
+            zh_Hans: 搜索结果的数量(1-10)，默认为10
+          input_schema: null
+          label:
+            en_US: count
+            ja_JP: count
+            pt_BR: count
+            zh_Hans: count
+          llm_description: 搜索结果的数量(1-10)，默认为10
+          max: 10
+          min: 1
+          multiple: false
+          name: count
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: number
+        params:
+          count: ''
+          freshness: ''
+          query: ''
+        plugin_id: seekerliu/bocha
+        plugin_unique_identifier: seekerliu/bocha:0.0.1@7d2dbad3f9d2652300d73bb8d91337e925f3c0daf9e0a9e285e060fb9dd7aadb
+        provider_icon: https://cloud.dify.ai/console/api/workspaces/current/plugin/icon?tenant_id=20ca5266-c187-473b-8ea8-a95c2d4296f6&filename=6fc9b088775e6989b928672f2d8aeb764bdfd017127d04ed71fea55089c5aa74.svg
+        provider_id: seekerliu/bocha/bocha
+        provider_name: seekerliu/bocha/bocha
+        provider_show_name: 博查
+        provider_type: builtin
+        selected: false
+        title: Bocha Web Search
+        tool_configurations: {}
+        tool_description: 从博查搜索全网信息和网页链接，返回结果包括网页标题、网页URL、网页摘要、网站名称、网站图标、发布时间、图片链接等
+        tool_label: Bocha Web Search
+        tool_name: BochaWebSearch
+        tool_node_version: '2'
+        tool_parameters:
+          count:
+            type: constant
+            value: 3
+          freshness:
+            type: mixed
+            value: noLimit
+          query:
+            type: mixed
+            value: '{{#1789895541850.query#}}'
+        type: tool
+      height: 87
+      id: '1789893592579'
+      position:
+        x: 1747.5820501817366
+        y: 507.158891226941
+      positionAbsolute:
+        x: 1747.5820501817366
+        y: 507.158891226941
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        code: "import json\nimport re\n\ndef main(llm_text: str) -> dict:\n    # 从\
+          \ LLM 的 JSON 里挑出「没有 foodId」的菜 —— 那些就是目录里没有的。\n    # 提示词要求模型挑不到时整个 foodId\
+          \ 键都不输出,所以判空即可。\n    raw = (llm_text or \"\").strip()\n    if raw.startswith(\"\
+          ```\"):\n        raw = re.sub(r\"^```[a-zA-Z]*\\s*\", \"\", raw)\n     \
+          \   raw = re.sub(r\"\\s*```$\", \"\", raw).strip()\n\n    data = None\n\
+          \    try:\n        data = json.loads(raw)\n    except Exception:\n     \
+          \   m = re.search(r\"\\{.*\\}\", raw, re.S)\n        if m:\n           \
+          \ try:\n                data = json.loads(m.group(0))\n            except\
+          \ Exception:\n                data = None\n\n    names = []\n    if isinstance(data,\
+          \ dict):\n        for d in ((data.get(\"result\") or {}).get(\"dishes\"\
+          ) or []):\n            if isinstance(d, dict):\n                n = (d.get(\"\
+          name\") or \"\").strip()\n                if n and not d.get(\"foodId\"\
+          ):\n                    names.append(n)\n\n    if not names:\n        #\
+          \ 这一餐的菜全在目录里。下游那条条件分支会**跳过**搜索,\n        # 所以正常一餐里这个 query 根本用不到。\n    \
+          \    # 留着它是兜底:分支要是被误删或接错,Bocha 拿到空串会报 400,\n        # 而节点失败会中断整条工作流 —— 那比多花几秒糟得多。\n\
+          \        query = \"无\"\n    else:\n        query = \" \".join(names) + \"\
+          \ 每100克 热量 蛋白质 脂肪 碳水化合物 钠 糖\"\n\n    return {\"query\": query, \"names_json\"\
+          : json.dumps(names, ensure_ascii=False), \"has_missing\": bool(names)}"
+        code_language: python3
+        outputs:
+          has_missing:
+            children: null
+            type: boolean
+          names_json:
+            children: null
+            type: string
+          query:
+            children: null
+            type: string
+        selected: false
+        title: 抽取库外菜
+        type: code
+        variables:
+        - value_selector:
+          - llm
+          - text
+          value_type: string
+          variable: llm_text
+      height: 51
+      id: '1789895541850'
+      position:
+        x: 1447.5820501817366
+        y: 507.158891226941
+      positionAbsolute:
+        x: 1447.5820501817366
+        y: 507.158891226941
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: 3f2c9a41-6d18-4b7e-9a25-1c8e0f5b7d43
+            value: true
+            varType: boolean
+            variable_selector:
+            - '1789895541850'
+            - has_missing
+          id: 'true'
+          logical_operator: and
+        selected: false
+        title: 有没有库外菜
+        type: if-else
+      height: 147
+      id: '1789904551200'
+      position:
+        x: 1750
+        y: 507
+      positionAbsolute:
+        x: 1750
+        y: 507
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: qwen3.8-flash
+          provider: langgenius/tongyi/tongyi
+        prompt_template:
+        - id: b61b3f1a-4981-4a58-8da7-d28bda7991c7
+          role: system
+          text: "你要从网页搜索结果里，为给定的菜品找出「每 100 克的营养成分」。\n\n要补的菜品：【这里插入{{#1789895541850.names_json#}}\
+            \ 】\n\n搜索结果：\n【这里插入{{#1789896269720.text#}}】\n\n搜索结果是 JSON。每条结果在 webpage\
+            \ 数组里，字段是：\n  name      网页标题      snippet / summary   摘要\n  siteName \
+            \ 网站名（薄荷健康 / fatsecret / 标药网 这类）    url  网址\n\n只输出一个 JSON，不要解释、不要代码块围栏：\n\
+            \n{\"土豆炖牛肉\": {\"per100g\": {\"kcal\": 109, \"protein\": 10.98, \"carb\"\
+            : 5.9, \"fat\": 4.66, \"sodium\": 270, \"sugar\": 0}, \"source\": \"fatsecret.cn\"\
+            }}\n\n规矩：\n\n1. 先按 name 把结果和菜品对上。「要补的菜品」里每一道都要出现 —— 除非搜到的\n   结果确实凑不齐它的六个键，那就整道菜都不要出现，不要填一部分\n\
+            \n2. 六个键一个都不能少，名字不能改：kcal / protein / carb / fat / sodium / sugar\n  \
+            \ 单位：kcal 千卡 ｜ protein / carb / fat / sugar 克 ｜ sodium 毫克\n\n3. 同一个菜往往有好几条结果，数字还不一样（不同食谱，实测\
+            \ 102 / 109 / 101 大卡）。\n   挑六个键最全的那一条，不要把几家的数字拼起来 —— 拼出来的数没有出处，\n   而它看起来和真的一样。source\
+            \ 写你选中的那一条的 siteName。\n\n4. 口径必须是「每 100 克」。搜到「1 份 (140克) 152 大卡」这种，自己折算成每\
+            \ 100 克。\n\n5. sugar 要特别小心。网页上写的「糖」基本都是总糖（含食材自带的），\n   而 App 这条要的是添加糖，两者对不上。所以只有这道菜明显是甜口\n\
+            \   （甜点、含糖饮料、糖醋、蜜汁这类）才填搜到的糖；其它一律填 0。\n   填 0 是估计，不是搜到的值 —— 照规矩 3 写 source，别谎报出处。\n\
+            \   （为什么宁可估计也要填：App 那边一旦这道菜没有 per100g，六个键会全部\n   按 0 计。填五个真数 + 一个估计的 0，比显示一排\
+            \ 0 更接近事实。）\n\n6. 一条都凑不齐就输出 {} —— 不要编数字。数字有出处比数字好看重要。"
+        selected: false
+        title: 营养折算
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: '1789895572351'
+      position:
+        x: 2071.2221006132954
+        y: 147.20719906766303
+      positionAbsolute:
+        x: 2071.2221006132954
+        y: 147.20719906766303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        code: "import json\nimport re\n\nKEYS = [\"kcal\", \"protein\", \"carb\",\
+          \ \"fat\", \"sodium\", \"sugar\"]\n\ndef _load(raw):\n    raw = (raw or\
+          \ \"\").strip()\n    if raw.startswith(\"```\"):\n        raw = re.sub(r\"\
+          ^```[a-zA-Z]*\\s*\", \"\", raw)\n        raw = re.sub(r\"\\s*```$\", \"\"\
+          , raw).strip()\n    try:\n        return json.loads(raw)\n    except Exception:\n\
+          \        m = re.search(r\"\\{.*\\}\", raw, re.S)\n        if m:\n      \
+          \      try:\n                return json.loads(m.group(0))\n           \
+          \ except Exception:\n                return None\n    return None\n\ndef\
+          \ main(llm_text: str, patch_json: str) -> dict:\n    data = _load(llm_text)\n\
+          \    if not isinstance(data, dict):\n        # LLM 的输出解析不了 —— 原样交回去,让下游的「代码执行\
+          \ 2」去走它自己\n        # 那条「解析失败」的兜底分支。这里不要自己造一个,那会掩盖真正的问题。\n        return\
+          \ {\"merged\": llm_text or \"\", \"applied\": 0}\n\n    patch = _load(patch_json)\n\
+          \    if not isinstance(patch, dict):\n        patch = {}\n\n    applied\
+          \ = 0\n    for d in ((data.get(\"result\") or {}).get(\"dishes\") or []):\n\
+          \        if not isinstance(d, dict):\n            continue\n        # 只在「模型没挑到\
+          \ foodId」的菜上补。有 foodId 的菜走库里的值,\n        # 库里的值和它是同一把尺子,不该被搜索来的数覆盖。\n  \
+          \      if d.get(\"foodId\"):\n            continue\n        p = patch.get((d.get(\"\
+          name\") or \"\").strip())\n        if not isinstance(p, dict):\n       \
+          \     continue\n        per = p.get(\"per100g\")\n        src = (p.get(\"\
+          source\") or \"\").strip()\n        # 六个键少一个就不补。半份营养进总数,比明着「按 0 计」更糟 ——\n\
+          \        # 后者用户看得见,前者看不见。\n        if not isinstance(per, dict):\n     \
+          \       continue\n        if any(not isinstance(per.get(k), (int, float))\
+          \ for k in KEYS):\n            continue\n        if not src:\n         \
+          \   continue\n        d[\"per100g\"] = {k: per[k] for k in KEYS}\n     \
+          \   d[\"source\"] = src\n        applied += 1\n\n    return {\"merged\"\
+          : json.dumps(data, ensure_ascii=False), \"applied\": applied}"
+        code_language: python3
+        outputs:
+          applied:
+            children: null
+            type: number
+          merged:
+            children: null
+            type: string
+        selected: false
+        title: 合并营养
+        type: code
+        variables:
+        - value_selector:
+          - llm
+          - text
+          value_type: string
+          variable: llm_text
+        - value_selector:
+          - '1789895572351'
+          - text
+          value_type: string
+          variable: patch_json
+      height: 51
+      id: '1789895604860'
+      position:
+        x: 2370.1537151432935
+        y: 147.20719906766303
+      positionAbsolute:
+        x: 2370.1537151432935
+        y: 147.20719906766303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        code: "def main(results: list) -> dict:\n    # Bocha 的输出是嵌套数组: [{\"image\"\
+          :[...], \"webpage\":[{...}, ...]}]\n    # 这里只把 webpage 摘出来压成紧凑文本 —— image\
+          \ 那一坨对营养毫无用处,\n    # 白占上下文。顺带把格式固定下来,model 就不用去猜结构了。\n    lines = []\n \
+          \   blocks = results if isinstance(results, list) else []\n    for b in\
+          \ blocks:\n        if not isinstance(b, dict):\n            continue\n \
+          \       for i, w in enumerate(b.get(\"webpage\") or [], 1):\n          \
+          \  if not isinstance(w, dict):\n                continue\n            name\
+          \ = (w.get(\"name\") or \"\").strip()\n            site = (w.get(\"siteName\"\
+          ) or \"\").strip()\n            body = (w.get(\"summary\") or w.get(\"snippet\"\
+          ) or \"\").strip()\n            if name or body:\n                lines.append(f\"\
+          [{i}] {name} —— {site}\\n{body}\")\n    return {\"text\": \"\\n\\n\".join(lines)\
+          \ if lines else \"(没有搜索结果)\"}\n"
+        code_language: python3
+        outputs:
+          text:
+            children: null
+            type: string
+        selected: false
+        title: 搜索转文本
+        type: code
+        variables:
+        - value_selector:
+          - '1789893592579'
+          - json
+          value_type: array[object]
+          variable: results
+      height: 51
+      id: '1789896269720'
+      position:
+        x: 1770.1537151432935
+        y: 147.20719906766303
+      positionAbsolute:
+        x: 1770.1537151432935
+        y: 147.20719906766303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: 3f2c9a41-6d18-4b7e-9a25-1c8e0f5b7d43
+            value: names
+            varType: string
+            variable_selector:
+            - '1789303129642'
+            - stage
+          id: 'true'
+          logical_operator: and
+        selected: false
+        title: 只要菜名
+        type: if-else
+      height: 147
+      id: '1789999000001'
+      position:
+        x: 380
+        y: 480
+      positionAbsolute:
+        x: 380
+        y: 480
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 30
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: qwen3.7-plus
+          provider: langgenius/tongyi/tongyi
+        prompt_template:
+        - id: 7f3a1c20-1111-4a2b-9c30-000000000001
+          role: system
+          text: "【任务】这是用户这一餐的照片。数清楚画面里有几样能吃能喝的,逐样写出通用菜名。\n\n规则:\n1. 有几样就列几样,一样都不许漏(漏一样,后面的热量、钠、建议全跟着偏)。\n\
+            2. 主食、汤、饮料、水果、包装食品、零食都算一样 —— 别只认「一盘菜」。\n3. 名字要能拿去搜到营养值的那种(「红烧排骨」「蒜蓉西兰花」「米饭」);\n\
+            \   不要写「妈妈做的」「XX 牌」这类修饰,也不要写「一份」「200g」「不清楚」。\n4. 只输出一个 JSON,不要代码块、不要解释:\n\
+            \n{\"result\": {\"mode\": \"plate\", \"dishes\": [{\"name\": \"清蒸鱼\"},\
+            \ {\"name\": \"米饭\"}]}}\n\n5. 空列表是**极少数情况**:只有画面里确实什么都没有(纯风景、纯文字截图)才用\n\
+            {\"result\": {\"mode\": \"plate\", \"dishes\": []}}。看到餐盘、碗、杯、包装,一律按第 1\
+            \ 条列出来。"
+        - id: 7f3a1c20-1111-4a2b-9c30-000000000002
+          role: user
+          text: ''
+        selected: true
+        title: 认菜
+        type: llm
+        vision:
+          configs:
+            detail: high
+            variable_selector:
+            - sys
+            - files
+          enabled: true
+      height: 87
+      id: '1789999000002'
+      position:
+        x: 380
+        y: 640
+      positionAbsolute:
+        x: 380
+        y: 640
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        answer: '{{#1789999000002.text#}}'
+        selected: false
+        title: 直接回复 3
+        type: answer
+        variables: []
+      height: 101
+      id: '1789999000003'
+      position:
+        x: 980
+        y: 109.1444636887509
+      positionAbsolute:
+        x: 980
+        y: 109.1444636887509
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    viewport:
+      x: -96.89373103182606
+      y: 163.04430944528661
+      zoom: 0.6175242680765113
+  rag_pipeline_variables: []

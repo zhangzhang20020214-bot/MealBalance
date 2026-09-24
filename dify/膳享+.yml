@@ -1,0 +1,485 @@
+app:
+  description: ''
+  icon: smile
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: advanced-chat
+  name: 膳享+
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.2.22@9cea96ffc7977f536c02999c80ff1283b1819aab9b6fa2fdf789d0c6c7d03715
+    version: null
+kind: app
+version: 0.7.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      - document
+      - audio
+      - video
+      allowed_file_upload_methods:
+      - remote_url
+      - local_file
+      enabled: true
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 50
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        knowledge_file_size_limit: 15
+        single_chunk_attachment_limit: 10
+        skill_file_size_limit: 50
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: true
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: true
+    text_to_speech:
+      enabled: true
+      language: zh-Hans
+      voice: Cherry
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1789300896618-source-llm-target
+      source: '1789300896618'
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: code
+      id: 1789300716606-source-1789303129642-target
+      source: '1789300716606'
+      sourceHandle: source
+      target: '1789303129642'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: answer
+      id: 1789303292519-source-answer-target
+      source: '1789303292519'
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+      id: 1789303129642-source-1789303414054-target
+      source: '1789303129642'
+      sourceHandle: source
+      target: '1789303414054'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: answer
+      id: 1789303414054-true-1789303457145-target
+      source: '1789303414054'
+      sourceHandle: 'true'
+      target: '1789303457145'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: knowledge-retrieval
+      id: 1789303414054-false-1789300896618-target
+      source: '1789303414054'
+      sourceHandle: 'false'
+      target: '1789300896618'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-source-1789303292519-target
+      source: llm
+      sourceHandle: source
+      target: '1789303292519'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 用户输入
+        type: start
+        variables: []
+      height: 72
+      id: '1789300716606'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 30
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: qwen3.7-plus
+          provider: langgenius/tongyi/tongyi
+        prompt_template:
+        - id: c20e40e6-1808-47ab-a706-456601c7b98f
+          role: system
+          text: " 一、角色\n\n  你是「膳享+」的饮食决策 Agent。你结合【用户健康档案】与【国家卫健委官方食养指南知识】，对\n  用户输入的图片或文本，给出安全、可执行、合规的个性化饮食建议。\n\
+            \n  你不是医生：不做医疗诊断、不开处方、不承诺疗效。所有建议以官方食养指南为据，超出指南范围的\n  内容须明确说明，不得编造。\n\n\
+            \  二、输入\n\n  1. 健康档案 profile（JSON）：basicInfo（age/gender/heightCm/weightKg）、specialStage[]（pr\n\
+            \     egnancy/elderly/child/recovery）、healthGoals[]（sugar_control 控糖 /\
+            \ oil_control 控油\n     / salt_control 控盐 / balanced 均衡 / body_management\
+            \ 身材管理）、specialNutrition[]、d\n     ietaryPreferences[]、healthRestrictions[]（type/item/severity）。\n\
+            \  2. 功能模式 mode：fridge / plate / dish / menu / ingredient\n  3. 用户输入 input：text\
+            \ + images\n  4. 检索知识 {{#context#}}：知识库检索到的片段。\n\n  三、处理流程（严格按序）\n\n \
+            \ 第 1 步 · 硬规则拦截（最高优先级）\n  - severity = high 的过敏/禁忌/用药项命中输入 → 直接返回 blocked:\
+            \ true，不生成建议。\n  - medium/low → 不拦截，但在 advice 里给明确风险提示。\n  - 特殊阶段额外规避：孕期规避酒精/生食/高汞鱼；儿童规避高糖高盐及易噎呛；老人注意软烂易吞咽\n\
+            \    。\n\n  第 2 步 · 知识定位（选对指南）\n  控糖→糖尿病、控盐→高血压、控油→高脂血症、身材管理→肥胖、痛风→高尿酸、肾病→慢性肾脏病、补钙\n\
+            \  /骨质疏松→骨质疏松、老人肌肉衰减→肌少症、儿童生长迟缓→生长迟缓、脑卒中/康复→脑卒中。回答优\n  先引用 {{#context#}}，未覆盖就明说「超出指南范围」，不编数值。\n\
+            \n  第 3 步 · 按 mode 生成建议 → 第 4 步 · 合规校验（禁医疗诊断、强制免责声明）。\n\n  四、各模式输出要点\n\
+            \n  - fridge：识别食材→ingredients；推荐 2–4\n    道菜→dishes（reason/recipe/healthModification）；advice\
+            \ 搭配与用量。\n  - plate：识别菜品→dishes（suitable 标记）；advice 进食顺序（先菜→肉→主食）、分量、风险。\n\
+            \  - dish：做法步骤 recipe + 健康改良 healthModification，单菜品填 dishes[0]。\n  - menu：识别全菜单→dishes（每道\
+            \ suitable+reason）；advice 推荐点单组合。\n  - ingredient：识别配料/营养标签→nutrition（ingredients/labels/riskItems）；advice\n\
+            \    适配度+风险。\n\n  五、输出格式（只输出一个 JSON 对象，不要代码块/解释文字）\n\n  {\n    \"blocked\"\
+            : false,\n    \"risk\": { \"level\": \"high\", \"message\": \"检测到花生，与档案过敏项冲突，已拦截\"\
+            , \"items\":\n  [\"花生\"] },\n    \"result\": {\n      \"mode\": \"fridge\"\
+            ,\n      \"title\": \"推荐餐食建议\",\n      \"ingredients\": [ { \"name\":\
+            \ \"鸡蛋\", \"category\": \"蛋白质\", \"note\": \"\" } ],\n      \"dishes\"\
+            : [\n        { \"name\": \"番茄炒蛋\", \"reason\": \"低油低盐，符合控盐目标\", \"recipe\"\
+            :\n  [\"打蛋\",\"热锅少油\",\"翻炒\"], \"healthModification\": \"用橄榄油替代，减盐30%\"\
+            , \"suitable\":\n  true }\n      ],\n      \"nutrition\": { \"ingredients\"\
+            : [\"水\",\"白砂糖\"], \"labels\":\n  {\"热量\":\"180kJ\",\"钠\":\"120mg\"},\
+            \ \"riskItems\": [\"白砂糖\"] },\n      \"advice\": [\"建议先吃蔬菜再吃主食\", \"本餐油盐偏高，建议减少主食量\"\
+            ],\n      \"disclaimer\": \"本建议仅供参考，不构成医疗诊断或治疗意见。如有健康问题请咨询专业医生。\"\n  \
+            \  }\n  }\n\n  - blocked = true → 只返回 blocked + risk，不返回 result。\n  -\
+            \ blocked = false → result 只填充当前 mode 相关字段。\n  - disclaimer 文案固定，每次必须原样返回。\n\
+            \n  六、合规底线\n\n  1. 数值保真：克数/毫克/千卡/μmol/L/mmHg 必须来自指南原文，禁止编造或四舍五入。\n  2.\
+            \ 禁医疗化：禁止「诊断/治疗/治愈/逆转/降压降糖降脂」等表述。\n  3. 免责声明强制随每次返回。4. 不越界：未覆盖就明说，不硬答"
+        selected: true
+        title: LLM
+        type: llm
+        vision:
+          configs:
+            detail: high
+            variable_selector:
+            - sys
+            - files
+          enabled: true
+      height: 87
+      id: llm
+      position:
+        x: 1243.6228024037505
+        y: 309.2828981971871
+      positionAbsolute:
+        x: 1243.6228024037505
+        y: 309.2828981971871
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        answer: '{{#1789303292519.final_json#}}'
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 101
+      id: answer
+      position:
+        x: 1708.8319571609068
+        y: 309.2828981971871
+      positionAbsolute:
+        x: 1708.8319571609068
+        y: 309.2828981971871
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        dataset_ids:
+        - ccbnVTF965ULiaO3DfW+s7PrNKiz+gfSlTgUbeByEUj6gfAufDAjpMfbtacSKmMK
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: qwen3-rerank
+            provider: langgenius/tongyi/tongyi
+          top_k: 4
+        query_attachment_selector: []
+        query_variable_selector:
+        - '1789300716606'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        title: 知识检索
+        type: knowledge-retrieval
+      height: 89
+      id: '1789300896618'
+      position:
+        x: 980
+        y: 282
+      positionAbsolute:
+        x: 980
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        code: "\nimport json\ndef main(query: str) -> dict:\n    blocked = False\n\
+          \    blocked_items = []\n    profile = {}\n    text = \"\"\n    try:\n \
+          \       req = json.loads(query)\n        profile = req.get(\"profile\",\
+          \ {})\n        inp = req.get(\"input\", {})\n        text = (inp.get(\"\
+          text\") or \"\") if isinstance(inp, dict) else \"\"\n    except Exception:\n\
+          \        text = query or \"\"\n    for r in profile.get(\"healthRestrictions\"\
+          , []):\n        if r.get(\"severity\") == \"high\" and r.get(\"type\") in\
+          \ (\"allergy\", \"taboo\", \"drug\"):\n            item = (r.get(\"item\"\
+          ) or \"\").strip()\n            if item and item in text:\n            \
+          \    blocked = True\n                blocked_items.append(item)\n    blocked_json\
+          \ = \"\"\n    if blocked:\n        message = \"检测到高危食材/成分「\" + \"、\".join(blocked_items)\
+          \ + \"」，与档案健康限制冲突，已拦截。\"\n        blocked_json = json.dumps({\n        \
+          \    \"blocked\": True,\n            \"risk\": {\"level\": \"high\", \"\
+          message\": message, \"items\": blocked_items},\n        }, ensure_ascii=False)\n\
+          \    return {\"blocked\": blocked, \"blocked_json\": blocked_json, \"blocked_items\"\
+          : blocked_items}\n\n"
+        code_language: python3
+        outputs:
+          blocked:
+            children: null
+            type: boolean
+          blocked_items:
+            children: null
+            type: array[string]
+          blocked_json:
+            children: null
+            type: string
+        selected: false
+        title: 代码执行
+        type: code
+        variables:
+        - value_selector:
+          - sys
+          - query
+          value_type: string
+          variable: query
+      height: 51
+      id: '1789303129642'
+      position:
+        x: 380
+        y: 282
+      positionAbsolute:
+        x: 380
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        code: "import json\nimport re\nDISCLAIMER = \"本建议仅供参考，不构成医疗诊断或治疗意见。如有健康问题请咨询专业医生。\"\
+          \ndef main(llm_text: str, query: str) -> dict:\n    profile = {}\n    try:\n\
+          \        req = json.loads(query)\n        profile = req.get(\"profile\"\
+          , {})\n    except Exception:\n        profile = {}\n    data = None\n  \
+          \  raw = (llm_text or \"\").strip()\n    if raw.startswith(\"```\"):\n \
+          \       raw = re.sub(r\"^```[a-zA-Z]*\\s*\", \"\", raw)\n        raw = re.sub(r\"\
+          \\s*```$\", \"\", raw).strip()\n    try:\n        data = json.loads(raw)\n\
+          \    except Exception:\n        m = re.search(r\"\\{.*\\}\", raw, re.S)\n\
+          \        if m:\n            try:\n                data = json.loads(m.group(0))\n\
+          \            except Exception:\n                data = None\n    if not\
+          \ isinstance(data, dict):\n        return {\n            \"valid\": False,\n\
+          \            \"final_json\": json.dumps({\n                \"blocked\":\
+          \ False,\n                \"result\": {\n                    \"title\":\
+          \ \"服务暂时不可用\",\n                    \"advice\": [\"抱歉，本次生成结果解析失败，请重试。\"\
+          ],\n                    \"disclaimer\": DISCLAIMER,\n                },\n\
+          \            }, ensure_ascii=False),\n        }\n    blocked = bool(data.get(\"\
+          blocked\", False))\n    blocked_items = list((data.get(\"risk\") or {}).get(\"\
+          items\") or [])\n    if not blocked:\n        high_items = [\n         \
+          \   (r.get(\"item\") or \"\").strip()\n            for r in profile.get(\"\
+          healthRestrictions\", [])\n            if r.get(\"severity\") == \"high\"\
+          \ and r.get(\"type\") in (\"allergy\", \"taboo\", \"drug\")\n        ]\n\
+          \        result = data.get(\"result\") or {}\n        haystack = json.dumps(result,\
+          \ ensure_ascii=False)\n        for item in high_items:\n            if item\
+          \ and item in haystack:\n                blocked = True\n              \
+          \  blocked_items.append(item)\n    if blocked:\n        final = {\n    \
+          \        \"blocked\": True,\n            \"risk\": {\n                \"\
+          level\": \"high\",\n                \"message\": \"检测到高危食材/成分「\" + \"、\"\
+          .join(blocked_items) + \"」，与档案健康限制冲突，已拦截。\",\n                \"items\"\
+          : blocked_items,\n            },\n        }\n    else:\n        final =\
+          \ data\n        final[\"blocked\"] = False\n        result = final.get(\"\
+          result\") or {}\n        result[\"disclaimer\"] = DISCLAIMER\n        final[\"\
+          result\"] = result\n    return {\"valid\": True, \"final_json\": json.dumps(final,\
+          \ ensure_ascii=False)}\n"
+        code_language: python3
+        outputs:
+          final_json:
+            children: null
+            type: string
+          valid:
+            children: null
+            type: boolean
+        selected: false
+        title: 代码执行 2
+        type: code
+        variables:
+        - value_selector:
+          - llm
+          - text
+          value_type: string
+          variable: llm_text
+        - value_selector:
+          - sys
+          - query
+          value_type: string
+          variable: query
+      height: 51
+      id: '1789303292519'
+      position:
+        x: 1470.1537151432935
+        y: 148.6169421470852
+      positionAbsolute:
+        x: 1470.1537151432935
+        y: 148.6169421470852
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: fefd8269-2e37-40ff-b8fe-0bd8c54ecc61
+            value: true
+            varType: boolean
+            variable_selector:
+            - '1789303129642'
+            - blocked
+          id: 'true'
+          logical_operator: and
+        selected: false
+        title: 条件分支
+        type: if-else
+      height: 123
+      id: '1789303414054'
+      position:
+        x: 680
+        y: 282
+      positionAbsolute:
+        x: 680
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        answer: '{{#1789303129642.blocked_json#}}'
+        selected: false
+        title: 直接回复 2
+        type: answer
+        variables: []
+      height: 101
+      id: '1789303457145'
+      position:
+        x: 980
+        y: 109.1444636887509
+      positionAbsolute:
+        x: 980
+        y: 109.1444636887509
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    viewport:
+      x: -828.9163916487228
+      y: 161.30341234026673
+      zoom: 0.7578582832552008
+  rag_pipeline_variables: []

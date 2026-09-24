@@ -1,0 +1,19 @@
+【食物库目录】识别菜品时,必须从下面这份目录里挑 foodId
+
+主食:  rice=米饭(熟)｜brown-rice=糙米饭｜mantou=馒头｜noodles=面条(煮)｜whole-wheat-bread=全麦面包｜congee=白粥｜oatmeal=燕麦粥｜xiaolongbao=小笼包｜dumpling=猪肉饺子｜corn=玉米(煮)｜sweet-potato=红薯(蒸)
+蛋奶豆:  boiled-egg=煮鸡蛋｜fried-egg=煎鸡蛋｜milk=牛奶｜soy-milk=无糖豆浆｜tofu-firm=北豆腐｜tofu-soft=南豆腐｜yogurt=原味酸奶
+肉类:  braised-pork=红烧肉｜braised-ribs=红烧排骨｜kungpao-chicken=宫保鸡丁｜boiled-chicken=白切鸡｜roast-drumstick=烤鸡腿｜tomato-egg=番茄炒蛋｜pepper-pork=青椒肉丝｜twice-cooked-pork=回锅肉｜steak=煎牛排｜braised-beef=卤牛肉
+水产:  steamed-fish=清蒸鱼｜boiled-shrimp=白灼虾｜salmon=煎三文鱼｜boiled-fish-spicy=水煮鱼
+蔬菜:  lettuce-stir=清炒油麦菜｜spinach-garlic=蒜蓉菠菜｜broccoli=白灼西兰花｜cucumber-salad=凉拌黄瓜｜green-beans=干煸四季豆｜mapo-tofu=麻婆豆腐｜stir-veggies=素炒时蔬｜tomato-raw=番茄(生)
+水果:  apple=苹果｜banana=香蕉｜orange=橙子｜grape=葡萄｜blueberry=蓝莓｜watermelon=西瓜
+汤羹:  seaweed-egg-soup=紫菜蛋花汤｜tomato-beef-soup=番茄牛腩汤｜wintermelon-soup=冬瓜排骨汤
+饮品:  americano=美式咖啡｜latte=拿铁｜cola=含糖可乐｜bubble-tea=珍珠奶茶｜orange-juice=橙汁
+其他:  chips=薯片｜peanut=炒花生｜cake=蛋糕｜chocolate=巧克力
+
+挑 foodId 的四条规矩:
+1. 只能从上面这份目录里挑,**不要**用目录以外的任何 id
+2. foodId 填的是等号**左边**那个英文 id(比如 rice),不是右边的中文名字
+3. 这道菜在目录里没有对应项时,**不要输出 foodId 这个字段** —— 不要为了填满
+   字段而编一个,编出来的 id 和真的在格式上一模一样,只会白费一次校验
+4. 不需要输出 grams。库里的每条都是「每 100g、熟食、可食部」的口径,
+   用户会在 App 里自己确认份量

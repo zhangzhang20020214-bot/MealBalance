@@ -1,0 +1,44 @@
+{
+  "name": "食衡 MealBalance",
+  "short_name": "食衡",
+  "description": "记录一餐，看到营养分析、健康分与控盐建议。",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F2F7F3",
+  "theme_color": "#1F9A44",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "拍餐盘",
+      "short_name": "拍餐盘",
+      "url": "/analyzing"
+    },
+    {
+      "name": "膳食日记",
+      "short_name": "日记",
+      "url": "/diary"
+    }
+  ]
+}

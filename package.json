@@ -1,0 +1,44 @@
+{
+  "name": "mealbalance",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "verify": "node scripts/verify-loop.mjs",
+    "verify:agent": "node scripts/verify-agent.mjs",
+    "verify:reply": "node scripts/verify-reply.mjs",
+    "verify:render": "node scripts/verify-render.mjs",
+    "verify:image": "node scripts/verify-image.mjs",
+    "verify:quota": "node scripts/verify-quota.mjs",
+    "verify:speech": "node scripts/verify-speech.mjs",
+    "verify:all": "npm run verify && npm run verify:agent && npm run verify:reply && npm run verify:render && npm run verify:image && npm run verify:quota && npm run verify:speech",
+    "probe": "node scripts/probe-agent.mjs",
+    "probe:vision": "node scripts/probe-vision.mjs",
+    "probe:dishes": "node scripts/probe-dishes.mjs",
+    "probe:ghost": "node scripts/probe-ghost.mjs",
+    "kb": "node scripts/make-kb.mjs",
+    "probe:kb": "node scripts/probe-kb.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "catalog": "node scripts/make-catalog.mjs",
+    "figma": "node scripts/fetch-figma.mjs"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
+  }
+}
